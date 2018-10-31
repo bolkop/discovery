@@ -1,7 +1,7 @@
 import sys
 import os
 from netdisc_v02 import netdisc
-#sys.path.append('C://python2.7//site-packages')
+# sys.path.append('C://python2.7//site-packages')
 
 ## -*- coding: utf-8 -*-
 
@@ -21,18 +21,19 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
+
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-class Ui_MainWindow(object):
 
+class Ui_MainWindow(object):
     ntd = netdisc()
 
     localDevicesList = []
-
 
     def browseFolder(self):
         """
@@ -69,20 +70,40 @@ class Ui_MainWindow(object):
         self.localDevicesComboBox.addItems(self.localDevicesList)
 
     def scanLocal(self):
+        """
+        Search for local devices on a network and list them in "Discovered Local Devises" window.
+        If there are no devices found the window i cleared.
+        """
+        #Clear content of "Interface Detail" window
+        self.interfaceDetails.clear()
+
+        # Search for local devices
         devices = self.ntd.do_localscan()
 
+        #Clear list of local devices
         if devices is None:
             self.localDevicesList = []
         else:
             self.localDevicesList = devices.splitlines()
-            self.updateDiscoveredDevice(self.DiscoveredLocalDev)
+        self.updateDiscoveredDevice(self.DiscoveredLocalDev)
 
     def printInfo(self):
-        dev =  self.DiscoveredLocalDev.currentItem().text()
-        dev = dev.split(':',1)
+        """
+        Print eth and fifo details in "Device Interface Details" window
+        """
+
+        # Text from selected line in "Discovered Local Devices"
+        dev = self.DiscoveredLocalDev.currentItem().text()
+        # Obtain first word from "dev"
+        dev = dev.split(':', 1)
+
         if "DEV" in dev[0]:
-            self.ntd.do_print(unicode(dev[0]))
-            print dev[0]
+            #
+            results = self.ntd.do_print(unicode(dev[0]))
+            print results
+            self.interfaceDetails.setText(results)
+        else:
+            self.interfaceDetails.clear()
 
     def setupUi(self, MainWindow):
 
@@ -119,10 +140,10 @@ class Ui_MainWindow(object):
         self.DiscoveredLocalDev.setSpacing(2)
         self.DiscoveredLocalDev.itemSelectionChanged.connect(self.printInfo)
 
-        #self.discoveredDevicesView.QApplication.focusWidget().clearFocus()
+        # self.discoveredDevicesView.QApplication.focusWidget().clearFocus()
 
-        #self.discoveredDevicesView.setAttribute(Qt.WA_MacShowFocusRect, 0)
-        #self.discoveredDevicesView.setFocuPolicy()
+        # self.discoveredDevicesView.setAttribute(Qt.WA_MacShowFocusRect, 0)
+        # self.discoveredDevicesView.setFocuPolicy()
 
         self.browseButton = QtGui.QPushButton(self.tab)
         self.browseButton.setGeometry(QtCore.QRect(354, 385, 85, 28))
@@ -150,7 +171,7 @@ class Ui_MainWindow(object):
         self.discoveredDevicesLable.setSizePolicy(sizePolicy)
         self.discoveredDevicesLable.setMinimumSize(QtCore.QSize(0, 20))
         self.discoveredDevicesLable.setStyleSheet(_fromUtf8("background-color: rgba(198, 225, 255, 0);"))
-        self.discoveredDevicesLable.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.discoveredDevicesLable.setAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.discoveredDevicesLable.setIndent(0)
         self.discoveredDevicesLable.setObjectName(_fromUtf8("discoveredDevicesLable"))
 
@@ -167,11 +188,14 @@ class Ui_MainWindow(object):
         self.configFileBrowse.setReadOnly(True)
         self.configFileBrowse.setObjectName(_fromUtf8("configFileBrowse"))
 
-        self.lineEdit_2 = QtGui.QLineEdit(self.tab)
-        self.lineEdit_2.setGeometry(QtCore.QRect(30, 195, 410, 170))
-        self.lineEdit_2.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.lineEdit_2.setReadOnly(True)
-        self.lineEdit_2.setObjectName(_fromUtf8("lineEdit_2"))
+        self.interfaceDetails = QtGui.QLabel(self.tab)
+        self.interfaceDetails.setGeometry(QtCore.QRect(30, 195, 410, 170))
+        self.interfaceDetails.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        #self.interfaceDetails.setReadOnly(True)
+        self.interfaceDetails.setAlignment(QtCore.Qt.AlignLeft)
+        self.interfaceDetails.setMargin(5)
+        self.interfaceDetails.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
+        self.interfaceDetails.setObjectName(_fromUtf8("interfaceDetails"))
 
         self.interfaceDetailsLabel.raise_()
         self.discoveredDevicesLable.raise_()
@@ -180,7 +204,7 @@ class Ui_MainWindow(object):
         self.scanButton.raise_()
         self.DiscoveredLocalDev.raise_()
         self.configFileBrowse.raise_()
-        self.lineEdit_2.raise_()
+        self.interfaceDetails.raise_()
         self.tabWidget.addTab(self.tab, _fromUtf8(""))
         self.tab_2 = QtGui.QWidget()
         self.tab_2.setObjectName(_fromUtf8("tab_2"))
@@ -213,7 +237,8 @@ class Ui_MainWindow(object):
 
         self.discoveredDevicesLable_2.setSizePolicy(sizePolicy)
         self.discoveredDevicesLable_2.setMinimumSize(QtCore.QSize(0, 20))
-        self.discoveredDevicesLable_2.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.discoveredDevicesLable_2.setAlignment(
+            QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.discoveredDevicesLable_2.setIndent(0)
         self.discoveredDevicesLable_2.setObjectName(_fromUtf8("discoveredDevicesLable_2"))
 
@@ -264,17 +289,19 @@ class Ui_MainWindow(object):
         self.discoveredDevicesLable_2.setText(_translate("MainWindow", "Discovered Remote Devices", None))
         self.scanButton_2.setText(_translate("MainWindow", "Scan Network", None))
         self.label.setText(_translate("MainWindow", "Select Local Device", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "   Remote Devices", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2),
+                                  _translate("MainWindow", "   Remote Devices", None))
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtGui.QApplication(sys.argv)
     MainWindow = QtGui.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     ui.updateDiscoveredDevice(ui.DiscoveredLocalDev)
-    #ui.showDiscoveredDevice("Dev 2", ui.DiscoveredLocalDev)
+    # ui.showDiscoveredDevice("Dev 2", ui.DiscoveredLocalDev)
     MainWindow.show()
 
     sys.exit(app.exec_())
