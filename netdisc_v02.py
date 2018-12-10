@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from pccontrol import pccontrol
+import textwrap
 
 
 #
@@ -172,8 +173,11 @@ class netdisc:
         Prints a summary of discovered devices or a single devices configuration
         OUT: List of discovered devices
         """
-        tmpDev = "DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
-                 "DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
+        tmpDev ="   Network Device Discovery - Device Summary \n" \
+                "   ----------------------------------------- \n" \
+                "   Name Device MAC Device IP Dev Type Req Discovery MAC Discovery IP \n\n" \
+                "   DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
+                "   DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
         
         tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
                      "Interfaces: Name IP Address MAC Address \n" \
@@ -186,7 +190,8 @@ class netdisc:
             if "DEV" in readback:
                 return readback
             else:
-                return tmpDev
+                tmpOutput = '\n'.join(tmpDev.split('\n')[4:])
+                return textwrap.dedent(tmpOutput)
             
         else:
             readback = self.__do_action("print",dev)
@@ -345,6 +350,3 @@ if __name__ == "__main__":
 # print (netd.do_stop())
 # except Exception as e:
 #     print(e)
-
-
-
