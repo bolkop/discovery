@@ -174,16 +174,28 @@ class netdisc:
         """
         tmpDev = "DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
                  "DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
+        
+        tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
+                     "Interfaces: Name IP Address MAC Address \n" \
+                     "eth0 192.168.0.150 00:aa:de:00:00:52 \n" \
+                     "fifo0 140.10.10.1 00:02:00:00:00:00 \n" \
+                     "fifo1 140.11.10.1 00:02:00:00:00:00"
+
         if dev is None:
             readback = self.__do_action("print")
             if "DEV" in readback:
                 return readback
+            else:
+                return tmpDev
+            
         else:
             readback = self.__do_action("print",dev)
             print (readback)
             if "eth" in readback:
                 return readback
-        return tmpDev
+            else:
+                return tmpSummary
+        
 
     def get_MAC(self):
         """
@@ -255,11 +267,6 @@ class netdisc:
         OUT: List of found devices class device
         Raise exception if not able to execute command
         """
-        devices = []
-
-
-        # self.do_stop()
-        # self.do_stop()
         self.do_start()
         self.do_delete()
         self.do_ldisc()
@@ -314,7 +321,7 @@ class device:
 
 
 # ********************** End of class device ********************************
-
+if __name__ == "__main__":
 # t = "Interfaces: Name IP Address MAC Address\n          eth0      192.168.0.150 00:aa:de:00:00:52\n         fifo0      140.10.10.1 00:02:00:00:00:00\n         fifo1      140.11.10.1 00:02:00:00:00:00"
 # for line in t.split('\n'):
 # if "fifo0" in line:
@@ -324,8 +331,8 @@ class device:
 
 ##TEST##
 #try:
-netd = netdisc()
-print(netd.do_localscan())
+    netd = netdisc()
+    print(netd.do_localscan())
 # print(netd.do_stop())
 # print(netd.do_start())
 # netd.do_ldisc()
@@ -338,7 +345,6 @@ print(netd.do_localscan())
 # print (netd.do_stop())
 # except Exception as e:
 #     print(e)
-
 
 
 
