@@ -1,6 +1,7 @@
 import sys
 import os
 from netdisc_v02 import netdisc
+import time
 # sys.path.append('C://python2.7//site-packages')
 
 ## -*- coding: utf-8 -*-
@@ -53,7 +54,7 @@ class Ui_MainWindow(object):
         print(selectedFile)
         self.configFileBrowse.setText(selectedFile)
 
-    def updateDiscoveredDevice(self, listView):
+    def updateDiscoveredDeviceList(self, listView):
         """
         Add discovered devices to Discovered Devices window
         from global localDevicesList
@@ -76,7 +77,7 @@ class Ui_MainWindow(object):
         """
         #Clear content of "Interface Detail" window
         self.interfaceDetails.clear()
-
+      
         # Search for local devices
         devices = self.ntd.do_localscan()
 
@@ -85,7 +86,8 @@ class Ui_MainWindow(object):
             self.localDevicesList = []
         else:
             self.localDevicesList = devices.splitlines()
-        self.updateDiscoveredDevice(self.DiscoveredLocalDev)
+        print (self.DiscoveredLocalDev)
+        self.updateDiscoveredDeviceList(self.DiscoveredLocalDev)
 
     def printInfo(self):
         """
@@ -98,13 +100,15 @@ class Ui_MainWindow(object):
         dev = dev.split(':', 1)
 
         if "DEV" in dev[0]:
-            #
             results = self.ntd.do_print(unicode(dev[0]))
             print results
             self.interfaceDetails.setText(results)
         else:
             self.interfaceDetails.clear()
-
+        
+    def updateLocalDevice(self):
+        None
+        
     def setupUi(self, MainWindow):
 
         # focused_widget = QtGui.QApplication.focusWidget()
@@ -138,7 +142,7 @@ class Ui_MainWindow(object):
         self.DiscoveredLocalDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
         self.DiscoveredLocalDev.setObjectName(_fromUtf8("DiscoveredLocalDev"))
         self.DiscoveredLocalDev.setSpacing(2)
-        self.DiscoveredLocalDev.itemSelectionChanged.connect(self.printInfo)
+        self.DiscoveredLocalDev.itemClicked.connect(self.printInfo)
 
         # self.discoveredDevicesView.QApplication.focusWidget().clearFocus()
 
@@ -150,6 +154,14 @@ class Ui_MainWindow(object):
         self.browseButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
         self.browseButton.setObjectName(_fromUtf8("browseButton"))
         self.browseButton.clicked.connect(self.browseFolder)
+        
+        self.updateLocalButton = QtGui.QPushButton(self.tab)
+        self.updateLocalButton.setGeometry(QtCore.QRect(115, 435, 325, 28))
+        self.updateLocalButton.setEnabled(False)
+        self.updateLocalButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.updateLocalButton.setObjectName(_fromUtf8("updateLocalButton"))
+        self.updateLocalButton.clicked.connect(self.updateLocalDevice)
+
 
         self.configFileLabel = QtGui.QLabel(self.tab)
         self.configFileLabel.setGeometry(QtCore.QRect(32, 390, 77, 16))
@@ -200,6 +212,7 @@ class Ui_MainWindow(object):
         self.interfaceDetailsLabel.raise_()
         self.discoveredDevicesLable.raise_()
         self.browseButton.raise_()
+        self.updateLocalButton.raise_()
         self.configFileLabel.raise_()
         self.scanButton.raise_()
         self.DiscoveredLocalDev.raise_()
@@ -278,6 +291,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow", None))
         self.browseButton.setText(_translate("MainWindow", "Browse", None))
+        self.updateLocalButton.setText(_translate("MainWindow", "Update Local Device", None))
         self.configFileLabel.setText(_translate("MainWindow", "Confige File", None))
         self.interfaceDetailsLabel.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable.setText(_translate("MainWindow", "Discovered Local Devices", None))
@@ -300,7 +314,7 @@ if __name__ == "__main__":
     MainWindow = QtGui.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
-    ui.updateDiscoveredDevice(ui.DiscoveredLocalDev)
+    ui.updateDiscoveredDeviceList(ui.DiscoveredLocalDev)
     # ui.showDiscoveredDevice("Dev 2", ui.DiscoveredLocalDev)
     MainWindow.show()
 
