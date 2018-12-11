@@ -51,8 +51,13 @@ class Ui_MainWindow(object):
         #         print(file_name)
         #         self.configFileBrowse.setText(file_name)
         selectedFile = QtGui.QFileDialog.getOpenFileName()
-        print(selectedFile)
+        #print(selectedFile)
         self.configFileBrowse.setText(selectedFile)
+        if self.configFileBrowse.text() != "":
+            self.updateLocalButton.setEnabled(True)
+        else:
+            self.updateLocalButton.setEnabled(False)
+        
 
     def updateDiscoveredDeviceList(self, listView):
         """
@@ -144,11 +149,6 @@ class Ui_MainWindow(object):
         self.DiscoveredLocalDev.setSpacing(2)
         self.DiscoveredLocalDev.itemClicked.connect(self.printInfo)
 
-        # self.discoveredDevicesView.QApplication.focusWidget().clearFocus()
-
-        # self.discoveredDevicesView.setAttribute(Qt.WA_MacShowFocusRect, 0)
-        # self.discoveredDevicesView.setFocuPolicy()
-
         self.browseButton = QtGui.QPushButton(self.tab)
         self.browseButton.setGeometry(QtCore.QRect(354, 385, 85, 28))
         self.browseButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
@@ -208,6 +208,12 @@ class Ui_MainWindow(object):
         self.interfaceDetails.setMargin(5)
         self.interfaceDetails.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
         self.interfaceDetails.setObjectName(_fromUtf8("interfaceDetails"))
+        
+        self.interfaceDetailsScrollArea = QtGui.QScrollArea(self.tab)
+        self.interfaceDetailsScrollArea.setGeometry(QtCore.QRect(30,195,410,170))
+        self.interfaceDetailsScrollArea.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.interfaceDetailsScrollArea.setWidgetResizable(True)
+        self.interfaceDetailsScrollArea.setWidget(self.interfaceDetails)
 
         self.interfaceDetailsLabel.raise_()
         self.discoveredDevicesLable.raise_()
@@ -228,10 +234,10 @@ class Ui_MainWindow(object):
         self.discoveredDevicesView_2.setFrameShadow(QtGui.QFrame.Sunken)
         self.discoveredDevicesView_2.setObjectName(_fromUtf8("discoveredDevicesView_2"))
 
-        self.browseButton_2 = QtGui.QPushButton(self.tab_2)
-        self.browseButton_2.setGeometry(QtCore.QRect(353, 385, 85, 28))
-        self.browseButton_2.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
-        self.browseButton_2.setObjectName(_fromUtf8("browseButton_2"))
+        self.browseButtonRemote = QtGui.QPushButton(self.tab_2)
+        self.browseButtonRemote.setGeometry(QtCore.QRect(353, 385, 850, 28))
+        self.browseButtonRemote.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.browseButtonRemote.setObjectName(_fromUtf8("browseButtonRemote"))
 
         self.configFileLabel_2 = QtGui.QLabel(self.tab_2)
         self.configFileLabel_2.setGeometry(QtCore.QRect(32, 390, 77, 16))
@@ -297,7 +303,7 @@ class Ui_MainWindow(object):
         self.discoveredDevicesLable.setText(_translate("MainWindow", "Discovered Local Devices", None))
         self.scanButton.setText(_translate("MainWindow", "Scan Network", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "   Local Devices", None))
-        self.browseButton_2.setText(_translate("MainWindow", "Browse", None))
+        self.browseButtonRemote.setText(_translate("MainWindow", "Browse", None))
         self.configFileLabel_2.setText(_translate("MainWindow", "Confige File", None))
         self.interfaceDetailsLabel_2.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable_2.setText(_translate("MainWindow", "Discovered Remote Devices", None))
