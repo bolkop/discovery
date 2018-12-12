@@ -2,15 +2,6 @@ import sys
 import os
 from netdisc_v02 import netdisc
 import time
-# sys.path.append('C://python2.7//site-packages')
-
-## -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'MainWindowv2.ui'
-#
-# Created by: PyQt4 UI code generator 4.12.1
-#
-# WARNING! All changes made in this file will be lost!
 
 from PyQt4 import QtCore, QtGui, Qt
 
@@ -32,9 +23,11 @@ except AttributeError:
 
 
 class Ui_MainWindow(object):
-    ntd = netdisc()
 
-    localDevicesList = []
+    ntd = netdisc() # object class netdisc
+    localDevicesList = []   # Global list to hold all discovered local devices
+    selectedLocalDevice = None  # Global variable to ref selected device from Discovered Local Devices List
+    localConfigFile = None   # Configuration File for modem
 
     def browseFolder(self):
         """
@@ -50,14 +43,16 @@ class Ui_MainWindow(object):
         #     for file_name in os.listdir(directory):  # for all files, if any, in the directory
         #         print(file_name)
         #         self.configFileBrowse.setText(file_name)
-        selectedFile = QtGui.QFileDialog.getOpenFileName()
-        #print(selectedFile)
-        self.configFileBrowse.setText(selectedFile)
+        global localConfigFile
+        localConfigFile = QtGui.QFileDialog.getOpenFileName()
+        # print(selectedFile)
+        self.configFileBrowse.setText(localConfigFile)
+
+        #Enable or disable "Update Local Device" button
         if self.configFileBrowse.text() != "":
             self.updateLocalButton.setEnabled(True)
         else:
             self.updateLocalButton.setEnabled(False)
-        
 
     def updateDiscoveredDeviceList(self, listView):
         """
@@ -80,18 +75,22 @@ class Ui_MainWindow(object):
         Search for local devices on a network and list them in "Discovered Local Devises" window.
         If there are no devices found the window i cleared.
         """
-        #Clear content of "Interface Detail" window
+        # Clear content of "Interface Detail" window
         self.interfaceDetails.clear()
-      
+
         # Search for local devices
         devices = self.ntd.do_localscan()
 
-        #Clear list of local devices
-        if devices is None:
+        if devices is False:
+            # Clear list of local devices if not found any device
             self.localDevicesList = []
+            self.localDevicesList.insert(0, "None")
+
         else:
+            # Update list of local devices
             self.localDevicesList = devices.splitlines()
-        print (self.DiscoveredLocalDev)
+
+        # Print list of discovered devices in "Discovered Local Devices" window
         self.updateDiscoveredDeviceList(self.DiscoveredLocalDev)
 
     def printInfo(self):
@@ -101,19 +100,24 @@ class Ui_MainWindow(object):
 
         # Text from selected line in "Discovered Local Devices"
         dev = self.DiscoveredLocalDev.currentItem().text()
-        # Obtain first word from "dev"
-        dev = dev.split(':', 1)
 
-        if "DEV" in dev[0]:
-            results = self.ntd.do_print(unicode(dev[0]))
-            print results
+        # Obtain first word from "dev"
+        global selectedLocalDevice
+        selectedLocalDevice = dev.split(' ', 1)
+
+        if "DEV" in selectedLocalDevice[0]:
+            results = self.ntd.do_print(unicode(selectedLocalDevice[0]))
             self.interfaceDetails.setText(results)
         else:
             self.interfaceDetails.clear()
-        
+
     def updateLocalDevice(self):
-        None
-        
+        global selectedLocalDevice
+        global localConfigFile
+        if "DEV" in selectedLocalDevice[0]:
+            self.ntd.do_lcfg(unicode(selectedLocalDevice[0]),str(localConfigFile))
+            self.printInfo()
+
     def setupUi(self, MainWindow):
 
         # focused_widget = QtGui.QApplication.focusWidget()
@@ -154,14 +158,13 @@ class Ui_MainWindow(object):
         self.browseButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
         self.browseButton.setObjectName(_fromUtf8("browseButton"))
         self.browseButton.clicked.connect(self.browseFolder)
-        
+
         self.updateLocalButton = QtGui.QPushButton(self.tab)
         self.updateLocalButton.setGeometry(QtCore.QRect(115, 435, 325, 28))
         self.updateLocalButton.setEnabled(False)
         self.updateLocalButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
         self.updateLocalButton.setObjectName(_fromUtf8("updateLocalButton"))
         self.updateLocalButton.clicked.connect(self.updateLocalDevice)
-
 
         self.configFileLabel = QtGui.QLabel(self.tab)
         self.configFileLabel.setGeometry(QtCore.QRect(32, 390, 77, 16))
@@ -203,14 +206,15 @@ class Ui_MainWindow(object):
         self.interfaceDetails = QtGui.QLabel(self.tab)
         self.interfaceDetails.setGeometry(QtCore.QRect(30, 195, 410, 170))
         self.interfaceDetails.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        #self.interfaceDetails.setReadOnly(True)
+        # self.interfaceDetails.setReadOnly(True)
         self.interfaceDetails.setAlignment(QtCore.Qt.AlignLeft)
         self.interfaceDetails.setMargin(5)
-        self.interfaceDetails.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
+        self.interfaceDetails.setTextInteractionFlags(
+            QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
         self.interfaceDetails.setObjectName(_fromUtf8("interfaceDetails"))
-        
+
         self.interfaceDetailsScrollArea = QtGui.QScrollArea(self.tab)
-        self.interfaceDetailsScrollArea.setGeometry(QtCore.QRect(30,195,410,170))
+        self.interfaceDetailsScrollArea.setGeometry(QtCore.QRect(30, 195, 410, 170))
         self.interfaceDetailsScrollArea.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
         self.interfaceDetailsScrollArea.setWidgetResizable(True)
         self.interfaceDetailsScrollArea.setWidget(self.interfaceDetails)
@@ -295,7 +299,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "GraphNetdisc", None))
         self.browseButton.setText(_translate("MainWindow", "Browse", None))
         self.updateLocalButton.setText(_translate("MainWindow", "Update Local Device", None))
         self.configFileLabel.setText(_translate("MainWindow", "Confige File", None))
@@ -313,7 +317,7 @@ class Ui_MainWindow(object):
                                   _translate("MainWindow", "   Remote Devices", None))
 
 
-if __name__ == "__main__":
+def mainFunc():
     import sys
 
     app = QtGui.QApplication(sys.argv)
@@ -325,3 +329,6 @@ if __name__ == "__main__":
     MainWindow.show()
 
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    mainFunc()
