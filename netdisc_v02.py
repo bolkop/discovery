@@ -4,6 +4,10 @@ import tempfile
 import xml.etree.ElementTree as ET
 from pccontrol import pccontrol
 import textwrap
+import time
+import sys
+import os
+from datetime import datetime
 
 
 #
@@ -27,22 +31,12 @@ class netdisc:
         IN: cmd as a string:
         OUT: netdisc response as string
         """
+        cmd = "C:\\ModemConfig\\netdisc" + " " + cmd1 + " " + cmd2 +" "+ cmd3 +" "+cmd4
         with tempfile.TemporaryFile() as tempf:
-            proc = subprocess.Popen(["C:\\ModemConfig\\netdisc", cmd1, cmd2, cmd3, cmd4], stdout=tempf)
-
+            proc = subprocess.Popen(cmd, stdout=tempf)
             proc.wait()
             tempf.seek(0)
             return tempf.read()
-        # proc = subprocess.Popen(["C:\\ModemConfig\\netdisc", cmd1, cmd2, cmd3, cmd4], stdout=subprocess.PIPE,
-        #                         stderr=subprocess.STDOUT,
-        #                         bufsize=-1)
-        #
-        # for line in iter(proc.stdout.readline, ''):
-        #     None
-        #
-        # # print (line)
-        #
-        # return line
 
     def do_start(self):
         """
@@ -59,7 +53,8 @@ class netdisc:
         if "running" in readback:
             return True
         else:
-            raise Exception("Can't start netdisc")
+            return False
+           # raise Exception("Can't start netdisc")
 
     def do_stop(self):
         """
@@ -70,14 +65,13 @@ class netdisc:
         # Response from netdisc
         try:
             readback = self.__do_action("stop")
-            # print(readback)
         except Exception as e:
             return e
-        print(readback)
-        if "stop" in readback or "not running" in readback:
+        if "stopped" in readback or "not running" in readback:
             return True
         else:
-            raise Exception("Can't stop netdisc")
+            return False
+            #raise Exception("Can't stop netdisc")
 
     def do_ldisc(self):
         """
@@ -94,7 +88,8 @@ class netdisc:
             # else:
             # raise Exception("There are no devices discovered")
         else:
-            raise Exception("Local discovery not sent")
+            return False
+            #raise Exception("Local discovery not sent")
 
     def do_rdisc(self, device, interfaceName):
         """
@@ -124,13 +119,16 @@ class netdisc:
             configs = open(configFile, "rb")
         except:
             raise ValueError("Cannot open the config file")
+
         # Response from netdisc
-        readback = self.__do_action("lcfg", device.upper(), configFile)
-        if "sent LOCAL-CONFIG" in readback:
-            if "Received CONFIG-ACK" in readback:
-                return True
-            else:
-                raise Exception("No response from local device")
+        readback = self.__do_action("lcfg", device, configFile)
+
+        if "Sent LOCAL-CONFIG" in readback:
+            # if "Received CONFIG-ACK" in readback:
+            #     return True
+            # else:
+            #     raise Exception("No response from local device")
+            return True
         else:
             raise ValueError("Config file not sent", readback)
 
@@ -166,41 +164,80 @@ class netdisc:
         if "Devices deleted" in readback:
             return True
         else:
-            raise Exception("Can't delete devices")
+            return False
+            #raise Exception("Can't delete devices")
 
     def do_print(self, dev=None):
         """
         Prints a summary of discovered devices or a single devices configuration
         OUT: List of discovered devices
         """
-        tmpDev ="   Network Device Discovery - Device Summary \n" \
-                "   ----------------------------------------- \n" \
-                "   Name Device MAC Device IP Dev Type Req Discovery MAC Discovery IP \n\n" \
-                "   DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
-                "   DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
-        
-        tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
-                     "Interfaces: Name IP Address MAC Address \n" \
-                     "eth0 192.168.0.150 00:aa:de:00:00:52 \n" \
-                     "fifo0 140.10.10.1 00:02:00:00:00:00 \n" \
-                     "fifo1 140.11.10.1 00:02:00:00:00:00"
 
+        #This is only for testing
+        # tmpDev = "DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
+                 # "DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
+        
+        # tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
+        #              "Interfaces: Name IP Address MAC Address \n" \
+        #              "eth0 192.168.0.150 00:aa:de:00:00:52 \n" \
+        #              "fifo0 140.10.10.1 00:02:00:00:00:00 \n" \
+        #              "fifo1 140.11.10.1 00:02:00:00:00:00"
+        
+        # Check the modified time has changed for the devlist.xml file
+        c = 0
+        while c<8:
+            try:
+                newTime = (os.path.getmtime('C:\\ModemConfig\\devlist.xml'))
+               
+                # Extra time to make sure the devlist.xml file is fully modified    
+                time.sleep(0.5)
+                break
+                
+            except Exception:
+                time.sleep(0.1)
+                c += 1
+                      
         if dev is None:
-            readback = self.__do_action("print")
-            if "DEV" in readback:
-                return readback
-            else:
-                tmpOutput = '\n'.join(tmpDev.split('\n')[4:])
-                return textwrap.dedent(tmpOutput)
+
+            # #Get info about discovered devices
+            # readback = self.__do_action("print")
             
+            # #Wait for readback for less than 2s
+            # t1 = datetime.now()
+            # while len(readback)== 0:
+                # if (datetime.now() - t1).seconds > 1:
+                    # break
+            # #    time.sleep(0.8)
+                # readback = self.__do_action("print")
+            
+            # Send command netdisc print
+           
+           # time.sleep(2)
+          # print(os.path.getmtime("C:\\ModemConfig\\devlist.xml"))
+            readback = self.__do_action("print")   
+            
+            
+            #Check if any devices was discovered
+            if "DEV" in readback:
+
+                #Remove four first lines; only list of discovered devices will be shown
+                devicesList = '\n'.join(readback.split('\n')[4:])
+                
+                #Remove indent from text
+                devicesList = textwrap.dedent(devicesList)
+                return devicesList
+            else:
+                #return tmpDeV
+                return False
+
         else:
-            readback = self.__do_action("print",dev)
-            print (readback)
+            readback = self.__do_action("print", dev)
+            print(readback)
             if "eth" in readback:
                 return readback
             else:
-                return tmpSummary
-        
+                #return tmpSummary
+                return False
 
     def get_MAC(self):
         """
@@ -272,10 +309,15 @@ class netdisc:
         OUT: List of found devices class device
         Raise exception if not able to execute command
         """
+                
+        self.do_stop()
         self.do_start()
+   
         self.do_delete()
         self.do_ldisc()
+                        
         return self.do_print()
+
 
 # ********************** End of class netdisc ********************************
 
@@ -304,40 +346,57 @@ class device:
     # self.xmlFile = xmlFile
 
     def getName(self):
-        None
+        return self.__name
 
     def get_MAC(self):
-        None
+        return self.__macAddress
 
     def get_IP(self):
-        None
+        return self.__ipAddress
 
     def get_Type(self):
-        None
+        return self.__type
 
     def set_MAC(self, mac):
-        None
+        self.__macAddress = mac
 
     def set_IP(self, ip):
-        None
+        self.__ipAddress = ip
 
     def set_Type(self, type):
-        None
+        self.__type = type
 
 
 # ********************** End of class device ********************************
 if __name__ == "__main__":
-# t = "Interfaces: Name IP Address MAC Address\n          eth0      192.168.0.150 00:aa:de:00:00:52\n         fifo0      140.10.10.1 00:02:00:00:00:00\n         fifo1      140.11.10.1 00:02:00:00:00:00"
-# for line in t.split('\n'):
-# if "fifo0" in line:
+    # t = "Interfaces: Name IP Address MAC Address\n          eth0      192.168.0.150 00:aa:de:00:00:52\n         fifo0      140.10.10.1 00:02:00:00:00:00\n         fifo1      140.11.10.1 00:02:00:00:00:00"
+    # for line in t.split('\n'):
+    # if "fifo0" in line:
 
-# ipAddress = re.findall( r'[0-9]+(?:\.[0-9]+){3}', line)
-# print(ipAddress)
+    # ipAddress = re.findall( r'[0-9]+(?:\.[0-9]+){3}', line)
+    # print(ipAddress)
 
-##TEST##
-#try:
+    ##TEST##
+    # try:
     netd = netdisc()
-    print(netd.do_localscan())
+   # print(netd.do_localscan())
+   # netd.do_stop()
+   # netd.do_start()
+   # netd.do_start()
+
+  #  netd.do_delete()
+
+    #time.sleep(2)
+
+   # netd.do_ldisc()
+  #  time.sleep(2)
+  #  dev = netd.do_print()
+  #  print(dev)
+
+
+    dev = netd.do_localscan()
+    print(dev)
+   
 # print(netd.do_stop())
 # print(netd.do_start())
 # netd.do_ldisc()
