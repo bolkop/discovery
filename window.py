@@ -4,6 +4,7 @@ from netdisc_v02 import netdisc
 import time
 
 from PyQt4 import QtCore, QtGui, Qt
+from PyQt4.QtGui import QApplication, QCursor
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -28,25 +29,29 @@ class Ui_MainWindow(object):
     localDevicesList = []   # Global list to hold all discovered local devices
     selectedLocalDevice = None  # Global variable to ref selected device from Discovered Local Devices List
     localConfigFile = None   # Configuration File for modem
-
+    
+    def waiting_effects(function):
+        def new_function(self):
+            QApplication.setOverrideCursor(QCursor(QtCore.Qt.WaitCursor))
+            try:
+                function(self)
+            except Exception as e:
+                raise e
+                print("Error {}".format(e.args[0]))
+            finally:
+                QApplication.restoreOverrideCursor()
+        return new_function
+    
     def browseFolder(self):
         """
         Select a file after button Browse is clicked
         and display filer path in text field
         """
-        # # self.listWidget.clear()  # In case there are any existing elements in the list
-        # directory = QtGui.QFileDialog.getExistingDirectory(MainWindow)
-        # # execute getExistingDirectory dialog and set the directory variable to be equal
-        # # to the user selected directory
-        #
-        # if directory:  # if user didn't pick a directory don't continue
-        #     for file_name in os.listdir(directory):  # for all files, if any, in the directory
-        #         print(file_name)
-        #         self.configFileBrowse.setText(file_name)
-        global localConfigFile
-        localConfigFile = QtGui.QFileDialog.getOpenFileName()
+
+        
+        self.localConfigFile = QtGui.QFileDialog.getOpenFileName()
         # print(selectedFile)
-        self.configFileBrowse.setText(localConfigFile)
+        self.configFileBrowse.setText(self.localConfigFile)
 
         #Enable or disable "Update Local Device" button
         if self.configFileBrowse.text() != "":
@@ -69,17 +74,23 @@ class Ui_MainWindow(object):
         """
         self.localDevicesComboBox.clear()
         self.localDevicesComboBox.addItems(self.localDevicesList)
-
+        
+    @waiting_effects
     def scanLocal(self):
         """
         Search for local devices on a network and list them in "Discovered Local Devises" window.
         If there are no devices found the window i cleared.
         """
+        # Clear content of "Local Devices List" window
+        self.DiscoveredLocalDev.clear()
+        
         # Clear content of "Interface Detail" window
         self.interfaceDetails.clear()
 
         # Search for local devices
         devices = self.ntd.do_localscan()
+        
+        
 
         if devices is False:
             # Clear list of local devices if not found any device
@@ -102,20 +113,17 @@ class Ui_MainWindow(object):
         dev = self.DiscoveredLocalDev.currentItem().text()
 
         # Obtain first word from "dev"
-        global selectedLocalDevice
-        selectedLocalDevice = dev.split(' ', 1)
+        self.selectedLocalDevice = dev.split(' ', 1)
 
-        if "DEV" in selectedLocalDevice[0]:
-            results = self.ntd.do_print(unicode(selectedLocalDevice[0]))
+        if "DEV" in self.selectedLocalDevice[0]:
+            results = self.ntd.do_print(unicode(self.selectedLocalDevice[0]))
             self.interfaceDetails.setText(results)
         else:
             self.interfaceDetails.clear()
 
     def updateLocalDevice(self):
-        global selectedLocalDevice
-        global localConfigFile
-        if "DEV" in selectedLocalDevice[0]:
-            self.ntd.do_lcfg(unicode(selectedLocalDevice[0]),str(localConfigFile))
+        if "DEV" in self.selectedLocalDevice[0]:
+            self.ntd.do_lcfg(unicode(self.selectedLocalDevice[0]),str(self.localConfigFile))
             self.printInfo()
 
     def setupUi(self, MainWindow):
