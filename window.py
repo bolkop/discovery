@@ -48,8 +48,8 @@ class Ui_MainWindow(object):
         and display filer path in text field
         """
 
-        
-        self.localConfigFile = QtGui.QFileDialog.getOpenFileName()
+        filter = "xml(*.xml)"
+        self.localConfigFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
         # print(selectedFile)
         self.configFileBrowse.setText(self.localConfigFile)
 
@@ -73,7 +73,12 @@ class Ui_MainWindow(object):
         Update the list of items in comboBox from localDevicesList
         """
         self.localDevicesComboBox.clear()
-        self.localDevicesComboBox.addItems(self.localDevicesList)
+        
+        for dev in self.localDevicesList:
+            #topSideDev = " ".join(dev.split(" ", 4)[[dev[index] for index in [0,3]]])
+            tmpList = dev.split(" ", 5)
+            tmpList = " ".join([tmpList[index] for index in [0,2,3,4]])
+            self.localDevicesComboBox.addItem(tmpList)
         
     @waiting_effects
     def scanLocal(self):
@@ -82,16 +87,14 @@ class Ui_MainWindow(object):
         If there are no devices found the window i cleared.
         """
         # Clear content of "Local Devices List" window
-        self.DiscoveredLocalDev.clear()
+        self.discoveredLocalDev.clear()
         
         # Clear content of "Interface Detail" window
-        self.interfaceDetails.clear()
+        self.detailsLocalDev.clear()
 
         # Search for local devices
         devices = self.ntd.do_localscan()
-        
-        
-
+               
         if devices is False:
             # Clear list of local devices if not found any device
             self.localDevicesList = []
@@ -102,7 +105,7 @@ class Ui_MainWindow(object):
             self.localDevicesList = devices.splitlines()
 
         # Print list of discovered devices in "Discovered Local Devices" window
-        self.updateDiscoveredDeviceList(self.DiscoveredLocalDev)
+        self.updateDiscoveredDeviceList(self.discoveredLocalDev)
 
     def printInfo(self):
         """
@@ -110,21 +113,40 @@ class Ui_MainWindow(object):
         """
 
         # Text from selected line in "Discovered Local Devices"
-        dev = self.DiscoveredLocalDev.currentItem().text()
+        dev = self.discoveredLocalDev.currentItem().text()
 
         # Obtain first word from "dev"
         self.selectedLocalDevice = dev.split(' ', 1)
 
         if "DEV" in self.selectedLocalDevice[0]:
             results = self.ntd.do_print(unicode(self.selectedLocalDevice[0]))
-            self.interfaceDetails.setText(results)
+            self.detailsLocalDev.setText(results)
         else:
-            self.interfaceDetails.clear()
+            self.detailsLocalDev.clear()
 
     def updateLocalDevice(self):
         if "DEV" in self.selectedLocalDevice[0]:
             self.ntd.do_lcfg(unicode(self.selectedLocalDevice[0]),str(self.localConfigFile))
             self.printInfo()
+            
+    @waiting_effects
+    def scanRemote(self):
+        """
+        Search for remote devices on a network and list them in "Discovered Remote Devises" window.
+        If there are no devices found the window i cleared.
+        """
+        # Clear content of "Local Devices List" window
+        self.discoveredRemoteDev.clear()
+        
+        # Clear content of "Interface Detail" window
+        self.detailsRemoteDev.clear()
+
+        # Get selected devices from combo box
+        selectedDevice  = self.localDevicesComboBox.currentText()
+        
+        # Search for local devices
+      #  devices = self.ntd.do_rscan()
+        #print self.localDevicesComboBox.currentText()
 
     def setupUi(self, MainWindow):
 
@@ -154,12 +176,12 @@ class Ui_MainWindow(object):
         self.tab = QtGui.QWidget()
         self.tab.setObjectName(_fromUtf8("tab"))
 
-        self.DiscoveredLocalDev = QtGui.QListWidget(self.tab)
-        self.DiscoveredLocalDev.setGeometry(QtCore.QRect(30, 95, 410, 71))
-        self.DiscoveredLocalDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.DiscoveredLocalDev.setObjectName(_fromUtf8("DiscoveredLocalDev"))
-        self.DiscoveredLocalDev.setSpacing(2)
-        self.DiscoveredLocalDev.itemClicked.connect(self.printInfo)
+        self.discoveredLocalDev = QtGui.QListWidget(self.tab)
+        self.discoveredLocalDev.setGeometry(QtCore.QRect(30, 95, 410, 71))
+        self.discoveredLocalDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.discoveredLocalDev.setObjectName(_fromUtf8("discoveredLocalDev"))
+        self.discoveredLocalDev.setSpacing(2)
+        self.discoveredLocalDev.itemClicked.connect(self.printInfo)
 
         self.browseButton = QtGui.QPushButton(self.tab)
         self.browseButton.setGeometry(QtCore.QRect(354, 385, 85, 28))
@@ -178,10 +200,10 @@ class Ui_MainWindow(object):
         self.configFileLabel.setGeometry(QtCore.QRect(32, 390, 77, 16))
         self.configFileLabel.setObjectName(_fromUtf8("configFileLabel"))
 
-        self.interfaceDetailsLabel = QtGui.QLabel(self.tab)
-        self.interfaceDetailsLabel.setGeometry(QtCore.QRect(32, 175, 411, 20))
-        self.interfaceDetailsLabel.setStyleSheet(_fromUtf8("background-color: rgba(198, 225, 255, 0);"))
-        self.interfaceDetailsLabel.setObjectName(_fromUtf8("interfaceDetailsLabel"))
+        self.detailsLocalDevLabel = QtGui.QLabel(self.tab)
+        self.detailsLocalDevLabel.setGeometry(QtCore.QRect(32, 175, 411, 20))
+        self.detailsLocalDevLabel.setStyleSheet(_fromUtf8("background-color: rgba(198, 225, 255, 0);"))
+        self.detailsLocalDevLabel.setObjectName(_fromUtf8("detailsLocalDevLabel"))
 
         self.discoveredDevicesLable = QtGui.QLabel(self.tab)
         self.discoveredDevicesLable.setGeometry(QtCore.QRect(32, 75, 191, 20))
@@ -211,43 +233,44 @@ class Ui_MainWindow(object):
         self.configFileBrowse.setReadOnly(True)
         self.configFileBrowse.setObjectName(_fromUtf8("configFileBrowse"))
 
-        self.interfaceDetails = QtGui.QLabel(self.tab)
-        self.interfaceDetails.setGeometry(QtCore.QRect(30, 195, 410, 170))
-        self.interfaceDetails.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        # self.interfaceDetails.setReadOnly(True)
-        self.interfaceDetails.setAlignment(QtCore.Qt.AlignLeft)
-        self.interfaceDetails.setMargin(5)
-        self.interfaceDetails.setTextInteractionFlags(
+        self.detailsLocalDev = QtGui.QLabel(self.tab)
+        self.detailsLocalDev.setGeometry(QtCore.QRect(30, 195, 410, 170))
+        self.detailsLocalDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        # self.detailsLocalDev.setReadOnly(True)
+        self.detailsLocalDev.setAlignment(QtCore.Qt.AlignLeft)
+        self.detailsLocalDev.setMargin(5)
+        self.detailsLocalDev.setTextInteractionFlags(
             QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
-        self.interfaceDetails.setObjectName(_fromUtf8("interfaceDetails"))
+        self.detailsLocalDev.setObjectName(_fromUtf8("detailsLocalDev"))
 
-        self.interfaceDetailsScrollArea = QtGui.QScrollArea(self.tab)
-        self.interfaceDetailsScrollArea.setGeometry(QtCore.QRect(30, 195, 410, 170))
-        self.interfaceDetailsScrollArea.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.interfaceDetailsScrollArea.setWidgetResizable(True)
-        self.interfaceDetailsScrollArea.setWidget(self.interfaceDetails)
+        self.detailsLocalDevScrollArea = QtGui.QScrollArea(self.tab)
+        self.detailsLocalDevScrollArea.setGeometry(QtCore.QRect(30, 195, 410, 170))
+        self.detailsLocalDevScrollArea.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.detailsLocalDevScrollArea.setWidgetResizable(True)
+        self.detailsLocalDevScrollArea.setWidget(self.detailsLocalDev)
 
-        self.interfaceDetailsLabel.raise_()
+        self.detailsLocalDevLabel.raise_()
         self.discoveredDevicesLable.raise_()
         self.browseButton.raise_()
         self.updateLocalButton.raise_()
         self.configFileLabel.raise_()
         self.scanButton.raise_()
-        self.DiscoveredLocalDev.raise_()
+        self.discoveredLocalDev.raise_()
         self.configFileBrowse.raise_()
-        self.interfaceDetails.raise_()
+        self.detailsLocalDev.raise_()
         self.tabWidget.addTab(self.tab, _fromUtf8(""))
         self.tab_2 = QtGui.QWidget()
         self.tab_2.setObjectName(_fromUtf8("tab_2"))
 
-        self.discoveredDevicesView_2 = QtGui.QListView(self.tab_2)
-        self.discoveredDevicesView_2.setGeometry(QtCore.QRect(30, 95, 410, 71))
-        self.discoveredDevicesView_2.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.discoveredDevicesView_2.setFrameShadow(QtGui.QFrame.Sunken)
-        self.discoveredDevicesView_2.setObjectName(_fromUtf8("discoveredDevicesView_2"))
+        self.discoveredRemoteDev = QtGui.QListWidget(self.tab_2)
+        self.discoveredRemoteDev.setGeometry(QtCore.QRect(30, 95, 410, 71))
+        self.discoveredRemoteDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.discoveredRemoteDev.setFrameShadow(QtGui.QFrame.Sunken)
+        self.discoveredRemoteDev.setSpacing(2)
+        self.discoveredRemoteDev.setObjectName(_fromUtf8("discoveredRemoteDev"))
 
         self.browseButtonRemote = QtGui.QPushButton(self.tab_2)
-        self.browseButtonRemote.setGeometry(QtCore.QRect(353, 385, 850, 28))
+        self.browseButtonRemote.setGeometry(QtCore.QRect(353, 385, 85, 28))
         self.browseButtonRemote.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
         self.browseButtonRemote.setObjectName(_fromUtf8("browseButtonRemote"))
 
@@ -273,13 +296,14 @@ class Ui_MainWindow(object):
         self.discoveredDevicesLable_2.setIndent(0)
         self.discoveredDevicesLable_2.setObjectName(_fromUtf8("discoveredDevicesLable_2"))
 
-        self.scanButton_2 = QtGui.QPushButton(self.tab_2)
-        self.scanButton_2.setGeometry(QtCore.QRect(330, 60, 110, 28))
-        self.scanButton_2.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
-        self.scanButton_2.setObjectName(_fromUtf8("scanButton_2"))
+        self.scanButtonRemote = QtGui.QPushButton(self.tab_2)
+        self.scanButtonRemote.setGeometry(QtCore.QRect(330, 60, 110, 28))
+        self.scanButtonRemote.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.scanButtonRemote.setObjectName(_fromUtf8("scanButtonRemote"))
+        self.scanButtonRemote.clicked.connect(self.scanRemote)
 
         self.localDevicesComboBox = QtGui.QComboBox(self.tab_2)
-        self.localDevicesComboBox.setGeometry(QtCore.QRect(30, 35, 169, 28))
+        self.localDevicesComboBox.setGeometry(QtCore.QRect(30, 35, 200, 28))
         self.localDevicesComboBox.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
         self.localDevicesComboBox.setStyleSheet(_fromUtf8("selection-background-color: rgb(164, 205, 255);"))
         self.localDevicesComboBox.setObjectName(_fromUtf8("localDevicesComboBox"))
@@ -294,14 +318,31 @@ class Ui_MainWindow(object):
         self.lineEdit.setText(_fromUtf8(""))
         self.lineEdit.setReadOnly(True)
         self.lineEdit.setObjectName(_fromUtf8("lineEdit"))
-        self.lineEdit_3 = QtGui.QLineEdit(self.tab_2)
-        self.lineEdit_3.setGeometry(QtCore.QRect(30, 195, 410, 170))
-        self.lineEdit_3.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.lineEdit_3.setReadOnly(True)
-        self.lineEdit_3.setObjectName(_fromUtf8("lineEdit_3"))
+        
+        # self.lineEdit_3 = QtGui.QLineEdit(self.tab_2)
+        # self.lineEdit_3.setGeometry(QtCore.QRect(30, 195, 410, 170))
+        # self.lineEdit_3.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 205);"))
+        # self.lineEdit_3.setReadOnly(True)
+        # self.lineEdit_3.setObjectName(_fromUtf8("lineEdit_3"))      
+        
+        self.detailsRemoteDev = QtGui.QLabel(self.tab_2)
+        self.detailsRemoteDev.setGeometry(QtCore.QRect(30, 195, 410, 170))
+        self.detailsRemoteDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        # self.detailsRemoteDev.setReadOnly(True)
+        self.detailsRemoteDev.setAlignment(QtCore.Qt.AlignLeft)
+        self.detailsRemoteDev.setMargin(5)
+        self.detailsRemoteDev.setTextInteractionFlags(
+            QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
+        self.detailsRemoteDev.setObjectName(_fromUtf8("detailsRemoteDev"))
+               
+        self.detailsRemoteDevScrollArea = QtGui.QScrollArea(self.tab_2)
+        self.detailsRemoteDevScrollArea.setGeometry(QtCore.QRect(30, 195, 410, 170))
+        self.detailsRemoteDevScrollArea.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.detailsRemoteDevScrollArea.setWidgetResizable(True)
+        self.detailsRemoteDevScrollArea.setWidget(self.detailsRemoteDev)
+        
         self.tabWidget.addTab(self.tab_2, _fromUtf8(""))
-        MainWindow.setCentralWidget(self.centralwidget)
-
+        MainWindow.setCentralWidget(self.centralwidget)   
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -311,7 +352,7 @@ class Ui_MainWindow(object):
         self.browseButton.setText(_translate("MainWindow", "Browse", None))
         self.updateLocalButton.setText(_translate("MainWindow", "Update Local Device", None))
         self.configFileLabel.setText(_translate("MainWindow", "Confige File", None))
-        self.interfaceDetailsLabel.setText(_translate("MainWindow", "Device Interface Details", None))
+        self.detailsLocalDevLabel.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable.setText(_translate("MainWindow", "Discovered Local Devices", None))
         self.scanButton.setText(_translate("MainWindow", "Scan Network", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "   Local Devices", None))
@@ -319,7 +360,7 @@ class Ui_MainWindow(object):
         self.configFileLabel_2.setText(_translate("MainWindow", "Confige File", None))
         self.interfaceDetailsLabel_2.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable_2.setText(_translate("MainWindow", "Discovered Remote Devices", None))
-        self.scanButton_2.setText(_translate("MainWindow", "Scan Network", None))
+        self.scanButtonRemote.setText(_translate("MainWindow", "Scan Network", None))
         self.label.setText(_translate("MainWindow", "Select Local Device", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2),
                                   _translate("MainWindow", "   Remote Devices", None))
@@ -332,8 +373,8 @@ def mainFunc():
     MainWindow = QtGui.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
-    ui.updateDiscoveredDeviceList(ui.DiscoveredLocalDev)
-    # ui.showDiscoveredDevice("Dev 2", ui.DiscoveredLocalDev)
+    ui.updateDiscoveredDeviceList(ui.discoveredLocalDev)
+    # ui.showDiscoveredDevice("Dev 2", ui.discoveredLocalDev)
     MainWindow.show()
 
     sys.exit(app.exec_())
