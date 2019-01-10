@@ -14,15 +14,16 @@ from datetime import datetime
 # Class for scanning network using netdisc
 #
 class netdisc:
-    # capturedLine = ""
-    __pcIPAddress = None
-    __pcMACAddress = None
     __pcControl = pccontrol()
 
     def __init__(self):
-        # self.IP_address = None
-        # self.MAC_address = None
-        self.set_pcXML(self.get_MAC())
+        # Check PC MAC and IP address. 
+        self.MacAddress = self.get_MAC()
+        print(self.MacAddress)
+        self.IpAddress = self.get_IP()
+        print(self.IpAddress)
+        # Update 00000000000.xml file with PC MAC and IP address       
+       # self.set_pcXML(self.MacAddress, self.IpAddress)
 
     def __do_action(self, cmd1, cmd2="", cmd3="", cmd4=""):
         """
@@ -91,22 +92,25 @@ class netdisc:
             return False
             #raise Exception("Local discovery not sent")
 
-    def do_rdisc(self, device, interfaceName):
+    def do_rdisc(self, device):
         """
-        Send a Remote-Discovery
-        IN: devie as string, interfaceName as string
+        Send a Remote-Discovery using device name and "fifo0" 
+        IN: devie as string
         OUT: True if successfull
         Raise exception if not able to execute command
         """
+            
         # Response from netdisc
-        readback = self.__do_action("rdisc", device.upper(), interfaceName)
+        readback = self.__do_action("rdisc", device.upper(), "fifo0")
         if "sent REMOTE-DISCOVERY" in readback:
-            if "Received DISCOVERY-REPLY" in readback:
-                return True
-            else:
-                raise Exception("There are no remote devices discovered")
+            return True
+            # if "Received DISCOVERY-REPLY" in readback:
+                # return True
+            # else:
+                # raise Exception("There are no remote devices discovered")
         else:
-            raise ValueError("Remote discover not sent", readback)
+            return False
+            #raise ValueError("Remote discover not sent", readback)
 
     def do_lcfg(self, device, configFile):
         """
@@ -174,14 +178,14 @@ class netdisc:
         """
 
         #This is only for testing
-        # tmpDev = "DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
-                 # "DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
+        tmpDev = "DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
+                 "DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
         
-        # tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
-        #              "Interfaces: Name IP Address MAC Address \n" \
-        #              "eth0 192.168.0.150 00:aa:de:00:00:52 \n" \
-        #              "fifo0 140.10.10.1 00:02:00:00:00:00 \n" \
-        #              "fifo1 140.11.10.1 00:02:00:00:00:00"
+        tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
+                     "Interfaces: Name IP Address MAC Address \n" \
+                     "eth0 192.168.0.150 00:aa:de:00:00:52 \n" \
+                     "fifo0 140.10.10.1 00:02:00:00:00:00 \n" \
+                     "fifo1 140.11.10.1 00:02:00:00:00:00"
         
         # Check the modified time has changed for the devlist.xml file
         c = 0
@@ -217,18 +221,17 @@ class netdisc:
             readback = self.__do_action("print")   
             
             
-            #Check if any devices was discovered
+            # Check if any devices was discovered
             if "DEV" in readback:
 
-                #Remove four first lines; only list of discovered devices will be shown
+                # Remove four first lines; only list of discovered devices will be shown
                 devicesList = '\n'.join(readback.split('\n')[4:])
                 
-                #Remove indent from text
+                # Remove indent from text
                 devicesList = textwrap.dedent(devicesList)
                 return devicesList
             else:
-                #return tmpDeV
-                return False
+                return tmpDev #False
 
         else:
             readback = self.__do_action("print", dev)
@@ -236,8 +239,7 @@ class netdisc:
             if "eth" in readback:
                 return readback
             else:
-                #return tmpSummary
-                return False
+                return tmpSummary #False
 
     def get_MAC(self):
         """
@@ -248,12 +250,15 @@ class netdisc:
         try:
             # Collect MAC addreses from all active NIC
             macList = self.__pcControl.get_MAC()
+            #print (macList)
             macCount = len(macList)
+            #print(macCount)
+            
             # Check how many is active
-            if macCount > 1:
+            if macCount >1:
                 raise ValueError("More than one NIC is active")
             elif macCount == 0:
-                raise ValueError("There is no actie NIC")
+                raise ValueError("There is no active NIC")
             else:
                 return macList[0]
 
@@ -267,8 +272,25 @@ class netdisc:
         OUT: IP address
         Raise exception if not able to execute command
         """
+        try:
+            # Obtain IP addresses from active MAC address
+            IpList = self.__pcControl.get_IP(self.MacAddress)
+            IpListCount = len(IpList)
+            
+            # Check how many IP addresses is set
+            if IpListCount >1:
+                raise ValueError("More than one IP is set")
+            elif IpList == 0:
+                raise ValueError("There is no IP address")
+            else:
+                return IpList[0]
 
-    None
+        except Exception as e:
+            print("problem with IP")
+            return e  
+        
+   
+    
 
     def set_pcXML(self, mac, ip=None, mask=None):
         """
