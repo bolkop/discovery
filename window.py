@@ -27,8 +27,11 @@ class Ui_MainWindow(object):
 
     ntd = netdisc() # object class netdisc
     localDevicesList = []   # Global list to hold all discovered local devices
-    selectedLocalDevice = None  # Global variable to ref selected device from Discovered Local Devices List
-    localConfigFile = None   # Configuration File for modem
+    remoteDevicesList = []   # Global list to hold all discovered remote devices
+    selectedLocalDevice = None  # Global variable for selected local device 
+    selectedRemoteDevice = None  # Global variable for selected global device 
+    localConfigFile = None   # Configuration File for local device
+    remoteConfigFile = None   # Configuration File for remote device
     
     def waiting_effects(function):
         def new_function(self):
@@ -42,12 +45,12 @@ class Ui_MainWindow(object):
                 QApplication.restoreOverrideCursor()
         return new_function
     
-    def browseFolder(self):
+    def browseLocalFolder(self):
         """
-        Select a file after button Browse is clicked
+        Select a config file for local device after button Browse is clicked
         and display filer path in text field
         """
-
+        # Set file filter
         filter = "xml(*.xml)"
         self.localConfigFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
         # print(selectedFile)
@@ -58,6 +61,23 @@ class Ui_MainWindow(object):
             self.updateLocalButton.setEnabled(True)
         else:
             self.updateLocalButton.setEnabled(False)
+            
+    def browseRemoteFolder(self):
+        """
+        Select a config file for remote device after button Browse is clicked
+        and display filer path in text field
+        """
+        # Set file filter
+        filter = "xml(*.xml)"
+        self.remoteConfigFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
+        # print(selectedFile)
+        self.configRemoteFileBrowse.setText(self.remoteConfigFile)
+
+        #Enable or disable "Update Local Device" button
+        if self.configRemoteFileBrowse.text() != "":
+            self.updateRemoteButton.setEnabled(True)
+        else:
+            self.updateRemoteButton.setEnabled(False)
 
     def updateDiscoveredDeviceList(self, listView):
         """
@@ -75,16 +95,17 @@ class Ui_MainWindow(object):
         self.localDevicesComboBox.clear()
         
         for dev in self.localDevicesList:
-            #topSideDev = " ".join(dev.split(" ", 4)[[dev[index] for index in [0,3]]])
-            tmpList = dev.split(" ", 5)
-            tmpList = " ".join([tmpList[index] for index in [0,2,3,4]])
+        
+            # Remove MAC address and other info. Show only name DEV-? and IP address
+            devSplited = dev.split()
+            tmpList = " ".join([devSplited[index] for index in [0,2,3,4]])
             self.localDevicesComboBox.addItem(tmpList)
         
     @waiting_effects
     def scanLocal(self):
         """
         Search for local devices on a network and list them in "Discovered Local Devises" window.
-        If there are no devices found the window i cleared.
+        If there are no devices found the window is cleared.
         """
         # Clear content of "Local Devices List" window
         self.discoveredLocalDev.clear()
@@ -93,7 +114,7 @@ class Ui_MainWindow(object):
         self.detailsLocalDev.clear()
 
         # Search for local devices
-        devices = self.ntd.do_localscan()
+        devices = self.ntd.doLocalScan()
                
         if devices is False:
             # Clear list of local devices if not found any device
@@ -107,34 +128,68 @@ class Ui_MainWindow(object):
         # Print list of discovered devices in "Discovered Local Devices" window
         self.updateDiscoveredDeviceList(self.discoveredLocalDev)
 
-    def printInfo(self):
+    def printInfo(self, device, window):
         """
         Print eth and fifo details in "Device Interface Details" window
         """
-
-        # Text from selected line in "Discovered Local Devices"
-        dev = self.discoveredLocalDev.currentItem().text()
-
-        # Obtain first word from "dev"
-        self.selectedLocalDevice = dev.split(' ', 1)
-
-        if "DEV" in self.selectedLocalDevice[0]:
-            results = self.ntd.do_print(unicode(self.selectedLocalDevice[0]))
-            self.detailsLocalDev.setText(results)
+        # if device is None:
+            # dev = self.discoveredLocalDev.currentItem().text()
+        # # Text from selected line in "Discovered Local Devices"
+        # else:
+            # dev = device.text()
+            
+        # Obtain name of selected device
+        dev = device.text()        
+        
+        # Check in which window (local or remote) device is selected 
+        windowName =  window.objectName()
+        
+        if windowName is self.detailsLocalDev.objectName():
+            # Obtain local device name "DEV-?"
+            self.selectedLocalDevice = dev.split(' ', 1)
+            selected = self.selectedLocalDevice
+       
         else:
-            self.detailsLocalDev.clear()
+            # Obtain remote device name "DEV-?"
+            self.selectedRemoteDevice = dev.split(' ', 1)
+            selected = self.selectedRemoteDevice
+            
+        #print unicode(selected[0])
+        
+        if "DEV" in selected[0]:           
+            results = self.ntd.do_print(unicode(selected[0]))
+            print results
+            window.setText(results)
+        else:
+            window.clear()
 
     def updateLocalDevice(self):
+        """
+        Send selected configure .xml file to local device
+        Refresh details in local "Device Interface Details" window
+        """
         if "DEV" in self.selectedLocalDevice[0]:
             self.ntd.do_lcfg(unicode(self.selectedLocalDevice[0]),str(self.localConfigFile))
-            self.printInfo()
+            self.printInfo(self.discoveredLocalDev.currentItem(), self.detailsLocalDev)
+    
+    def updateRemoteDevice(self):
+        """
+        Send selected configure .xml file to remote device
+        Refresh details in remote "Device Interface Details" window
+        """
+        if "DEV" in self.selectedRemoteDevice[0]:
+            self.ntd.do_lcfg(unicode(self.selectedRemoteDevice[0]),str(self.remoteConfigFile))
+            self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev)
             
     @waiting_effects
     def scanRemote(self):
         """
         Search for remote devices on a network and list them in "Discovered Remote Devises" window.
-        If there are no devices found the window i cleared.
+        If there are no devices found the window is cleared.
         """
+        # Clear List
+        self.remoteDevicesList = []
+        
         # Clear content of "Local Devices List" window
         self.discoveredRemoteDev.clear()
         
@@ -142,12 +197,41 @@ class Ui_MainWindow(object):
         self.detailsRemoteDev.clear()
 
         # Get selected devices from combo box
-        selectedDevice  = self.localDevicesComboBox.currentText()
+        selectedDeviceInComboBox  = unicode(self.localDevicesComboBox.currentText())              
         
-        # Search for local devices
-      #  devices = self.ntd.do_rscan()
-        #print self.localDevicesComboBox.currentText()
+        # Obtain device name "DEV-?"
+        dev = selectedDeviceInComboBox.split(' ', 1)       
+        
+        # Search for remote devices for DEV-?
+        if "DEV" in dev[0]:           
+            devices = self.ntd.doRemoteScan(unicode(dev[0]))
+            
+            # Clear list of local devices if not found any device 
+            if devices is False:                             
+                self.remoteDevicesList.insert(0, "None")
 
+            else:
+                # Create a list of all devices (including local)
+                allDevices = devices.splitlines()
+                
+                # For testing only, remove when using real modems
+                allDevices.append("DEV-99 00:04:00:00:00:00 140.110.1.28 ELEC MODEM") 
+                
+                # Remove local devices from list and copy remote devices to remoteDevicesList
+                self.remoteDevicesList = list((set(allDevices) - set(self.localDevicesList)))
+                
+                # If no remote devices found, add "None" to remoteDeviceList
+                if len(self.remoteDevicesList) is 0:
+                    self.remoteDevicesList.insert(0, "None")               
+        
+        else: 
+            # Clear list of local devices if not found any device              
+            self.remoteDevicesList.insert(0, "None")
+            
+        # Update window with remote devices        
+        self.discoveredRemoteDev.addItems(self.remoteDevicesList)       
+        
+       
     def setupUi(self, MainWindow):
 
         # focused_widget = QtGui.QApplication.focusWidget()
@@ -181,13 +265,13 @@ class Ui_MainWindow(object):
         self.discoveredLocalDev.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
         self.discoveredLocalDev.setObjectName(_fromUtf8("discoveredLocalDev"))
         self.discoveredLocalDev.setSpacing(2)
-        self.discoveredLocalDev.itemClicked.connect(self.printInfo)
+        self.discoveredLocalDev.itemClicked.connect(lambda: self.printInfo(self.discoveredLocalDev.currentItem(), self.detailsLocalDev))
 
         self.browseButton = QtGui.QPushButton(self.tab)
         self.browseButton.setGeometry(QtCore.QRect(354, 385, 85, 28))
         self.browseButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
         self.browseButton.setObjectName(_fromUtf8("browseButton"))
-        self.browseButton.clicked.connect(self.browseFolder)
+        self.browseButton.clicked.connect(self.browseLocalFolder)
 
         self.updateLocalButton = QtGui.QPushButton(self.tab)
         self.updateLocalButton.setGeometry(QtCore.QRect(115, 435, 325, 28))
@@ -257,6 +341,7 @@ class Ui_MainWindow(object):
         self.scanButton.raise_()
         self.discoveredLocalDev.raise_()
         self.configFileBrowse.raise_()
+        #self.updateRemoteButton.raise_()
         self.detailsLocalDev.raise_()
         self.tabWidget.addTab(self.tab, _fromUtf8(""))
         self.tab_2 = QtGui.QWidget()
@@ -268,19 +353,29 @@ class Ui_MainWindow(object):
         self.discoveredRemoteDev.setFrameShadow(QtGui.QFrame.Sunken)
         self.discoveredRemoteDev.setSpacing(2)
         self.discoveredRemoteDev.setObjectName(_fromUtf8("discoveredRemoteDev"))
+        self.discoveredRemoteDev.itemClicked.connect(lambda: self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev))
 
         self.browseButtonRemote = QtGui.QPushButton(self.tab_2)
         self.browseButtonRemote.setGeometry(QtCore.QRect(353, 385, 85, 28))
         self.browseButtonRemote.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
         self.browseButtonRemote.setObjectName(_fromUtf8("browseButtonRemote"))
+        self.browseButtonRemote.clicked.connect(self.browseRemoteFolder)
+        
+        self.updateRemoteButton = QtGui.QPushButton(self.tab_2)
+        self.updateRemoteButton.setGeometry(QtCore.QRect(115, 435, 325, 28))
+        self.updateRemoteButton.setEnabled(False)
+        self.updateRemoteButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.updateRemoteButton.setObjectName(_fromUtf8("updateRemoteButton"))
+        self.updateRemoteButton.clicked.connect(self.updateRemoteDevice)
 
-        self.configFileLabel_2 = QtGui.QLabel(self.tab_2)
-        self.configFileLabel_2.setGeometry(QtCore.QRect(32, 390, 77, 16))
-        self.configFileLabel_2.setObjectName(_fromUtf8("configFileLabel_2"))
+        self.configFileLabelRemote = QtGui.QLabel(self.tab_2)
+        self.configFileLabelRemote.setGeometry(QtCore.QRect(32, 390, 77, 16))
+        self.configFileLabelRemote.setObjectName(_fromUtf8("configFileLabelRemote"))
 
-        self.interfaceDetailsLabel_2 = QtGui.QLabel(self.tab_2)
-        self.interfaceDetailsLabel_2.setGeometry(QtCore.QRect(32, 175, 411, 20))
-        self.interfaceDetailsLabel_2.setObjectName(_fromUtf8("interfaceDetailsLabel_2"))
+        self.detailsRemoteDevLabel = QtGui.QLabel(self.tab_2)
+        self.detailsRemoteDevLabel.setGeometry(QtCore.QRect(32, 175, 411, 20))
+        self.detailsRemoteDevLabel.setObjectName(_fromUtf8("detailsRemoteDevLabel"))
+        
         self.discoveredDevicesLable_2 = QtGui.QLabel(self.tab_2)
         self.discoveredDevicesLable_2.setGeometry(QtCore.QRect(32, 75, 191, 20))
 
@@ -312,12 +407,12 @@ class Ui_MainWindow(object):
         self.label.setGeometry(QtCore.QRect(32, 14, 131, 21))
         self.label.setObjectName(_fromUtf8("label"))
 
-        self.lineEdit = QtGui.QLineEdit(self.tab_2)
-        self.lineEdit.setGeometry(QtCore.QRect(114, 385, 231, 28))
-        self.lineEdit.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.lineEdit.setText(_fromUtf8(""))
-        self.lineEdit.setReadOnly(True)
-        self.lineEdit.setObjectName(_fromUtf8("lineEdit"))
+        self.configRemoteFileBrowse = QtGui.QLineEdit(self.tab_2)
+        self.configRemoteFileBrowse.setGeometry(QtCore.QRect(115, 385, 231, 28))
+        self.configRemoteFileBrowse.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.configRemoteFileBrowse.setText(_fromUtf8(""))
+        self.configRemoteFileBrowse.setReadOnly(True)
+        self.configRemoteFileBrowse.setObjectName(_fromUtf8("configRemoteFileBrowse"))
         
         # self.lineEdit_3 = QtGui.QLineEdit(self.tab_2)
         # self.lineEdit_3.setGeometry(QtCore.QRect(30, 195, 410, 170))
@@ -357,8 +452,9 @@ class Ui_MainWindow(object):
         self.scanButton.setText(_translate("MainWindow", "Scan Network", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "   Local Devices", None))
         self.browseButtonRemote.setText(_translate("MainWindow", "Browse", None))
-        self.configFileLabel_2.setText(_translate("MainWindow", "Confige File", None))
-        self.interfaceDetailsLabel_2.setText(_translate("MainWindow", "Device Interface Details", None))
+        self.updateRemoteButton.setText(_translate("MainWindow", "Update Remote Device", None))
+        self.configFileLabelRemote.setText(_translate("MainWindow", "Confige File", None))
+        self.detailsRemoteDevLabel.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable_2.setText(_translate("MainWindow", "Discovered Remote Devices", None))
         self.scanButtonRemote.setText(_translate("MainWindow", "Scan Network", None))
         self.label.setText(_translate("MainWindow", "Select Local Device", None))
