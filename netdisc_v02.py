@@ -22,8 +22,9 @@ class netdisc:
         print(self.MacAddress)
         self.IpAddress = self.get_IP()
         print(self.IpAddress)
+        
         # Update 00000000000.xml file with PC MAC and IP address       
-       # self.set_pcXML(self.MacAddress, self.IpAddress)
+        self.set_pcXML(self.MacAddress, self.IpAddress)
 
     def __do_action(self, cmd1, cmd2="", cmd3="", cmd4=""):
         """
@@ -136,10 +137,10 @@ class netdisc:
         else:
             raise ValueError("Config file not sent", readback)
 
-    def do_rcfg(self, device, network, configFile):
+    def do_rcfg(self, device, macAddress, configFile):
         """
         Send a Remote-Config
-        IN: Device name (e.g. DEV-1 or IP address), network name (e.g Fifo0 or MAC address) and directory of config .xml file
+        IN: Device name (e.g. DEV-1 or IP address), MAC address and directory of config .xml file
         OUT: True if successfull
         Raise exception if not able to execute command
         """
@@ -148,7 +149,7 @@ class netdisc:
         except:
             raise ValueError("Cannot open the config file")
         # Response from netdisc
-        readback = self.__do_action("rcfg", device.upper(), network, configFile)
+        readback = self.__do_action("rcfg", device.upper(), macAddress, configFile)
         if "sent REMOTE-CONFIG" in readback:
             if "Received CONFIG-ACK" in readback:
                 return True
@@ -324,23 +325,40 @@ class netdisc:
         # MAC address not change and return False
         return False
 
-    def do_localscan(self):
+    def doLocalScan(self):
         """
         Scan local network for any devices
         IN: None
         OUT: List of found devices class device
         Raise exception if not able to execute command
         """
-                
+        # Stop netdisc        
         self.do_stop()
+        
+        # Start nedtisc
         self.do_start()
-   
+        
+        # Delete remaining discovered devices 
         self.do_delete()
-        self.do_ldisc()
-                        
+        
+        # Scan for local devices
+        self.do_ldisc()    
+        
+        # Return list of found devices
         return self.do_print()
 
-
+    def doRemoteScan(self, device):
+        """
+        Scan local network for any devices
+        IN: None
+        OUT: List of found devices class device
+        Raise exception if not able to execute command
+        """              
+        # Scan for local devices
+        self.do_rdisc(device)    
+        
+        # Return list of found devices
+        return self.do_print()
 # ********************** End of class netdisc ********************************
 
 class scanning:
@@ -401,7 +419,7 @@ if __name__ == "__main__":
     ##TEST##
     # try:
     netd = netdisc()
-   # print(netd.do_localscan())
+   # print(netd.doLocalScan())
    # netd.do_stop()
    # netd.do_start()
    # netd.do_start()
@@ -416,7 +434,7 @@ if __name__ == "__main__":
   #  print(dev)
 
 
-    dev = netd.do_localscan()
+    dev = netd.doLocalScan()
     print(dev)
    
 # print(netd.do_stop())
