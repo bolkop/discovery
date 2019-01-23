@@ -176,9 +176,9 @@ class Ui_MainWindow(object):
         """
         Send selected configure .xml file to remote device
         Refresh details in remote "Device Interface Details" window
-        """
+        """            
         if "DEV" in self.selectedRemoteDevice[0]:
-            self.ntd.do_lcfg(unicode(self.selectedRemoteDevice[0]),str(self.remoteConfigFile))
+            self.ntd.do_rcfg(unicode(self.selectedRemoteDevice[0]), unicode(self.selectedRemoteDevice[1]), str(self.remoteConfigFile))
             self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev)
             
     @waiting_effects
