@@ -30,8 +30,10 @@ class Ui_MainWindow(object):
     remoteDevicesList = []   # Global list to hold all discovered remote devices
     selectedLocalDevice = None  # Global variable for selected local device 
     selectedRemoteDevice = None  # Global variable for selected global device 
-    localConfigFile = None   # Configuration File for local device
-    remoteConfigFile = None   # Configuration File for remote device
+    localConfigXmlFile = None   # Configuration .xml File for local device
+    remoteConfigXmlFile = None   # Configuration .xml File for remote device
+    localConfigFtpFile = None   # Configuration .ftp File for local device
+    remoteConfigFtpFile = None   # Configuration .ftp File for remote device
     
     def waiting_effects(function):
         def new_function(self):
@@ -45,40 +47,75 @@ class Ui_MainWindow(object):
                 QApplication.restoreOverrideCursor()
         return new_function
     
-    def browseLocalFolder(self):
+    def browseLocalXmlFolder(self):
         """
         Select a config file for local device after button Browse is clicked
         and display filer path in text field
         """
         # Set file filter
         filter = "xml(*.xml)"
-        self.localConfigFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
+        self.localConfigXmlFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
         # print(selectedFile)
-        self.configFileBrowse.setText(self.localConfigFile)
+        self.localConfigXmlFileBrowse.setText(self.localConfigXmlFile)
 
         #Enable or disable "Update Local Device" button
-        if self.configFileBrowse.text() != "":
-            self.updateLocalButton.setEnabled(True)
+        if self.localConfigXmlFileBrowse.text() != "":
+            self.updateLocalXmlButton.setEnabled(True)
         else:
-            self.updateLocalButton.setEnabled(False)
+            self.updateLocalXmlButton.setEnabled(False)
             
-    def browseRemoteFolder(self):
+    def browseRemoteXmlFolder(self):
         """
         Select a config file for remote device after button Browse is clicked
         and display filer path in text field
         """
         # Set file filter
         filter = "xml(*.xml)"
-        self.remoteConfigFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
+        self.remoteConfigXmlFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
         # print(selectedFile)
-        self.configRemoteFileBrowse.setText(self.remoteConfigFile)
+        self.remoteConfigXmlFileBrowse.setText(self.remoteConfigXmlFile)
 
         #Enable or disable "Update Local Device" button
-        if self.configRemoteFileBrowse.text() != "":
-            self.updateRemoteButton.setEnabled(True)
+        if self.remoteConfigXmlFileBrowse.text() != "":
+            self.updateRemoteXmlButton.setEnabled(True)
         else:
-            self.updateRemoteButton.setEnabled(False)
+            self.updateRemoteXmlButton.setEnabled(False)
 
+    def browseLocalFtpFolder(self):
+        """
+        Select a config file for local device after button Browse is clicked
+        and display filer path in text field
+        """
+        # Set file filter
+        filter = "ftp(*.ftp)"
+        self.localConfigFtpFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
+        # print(selectedFile)
+        self.configFtpFileBrowse.setText(self.localConfigFtpFile)
+
+        #Enable or disable "Update Local Device" button
+        if self.configFtpFileBrowse.text() != "":
+            self.updateLocalFtpButton.setEnabled(True)
+        else:
+            self.updateLocalFtpButton.setEnabled(False)
+            
+    def browseRemoteFtpFolder(self):
+        """
+        Select a config file for remote device after button Browse is clicked
+        and display filer path in text field
+        """
+        # Set file filter
+        filter = "xml(*.xml)"
+        self.remoteConfigFtpFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
+        # print(selectedFile)
+        self.configFtpRemoteFileBrowse.setText(self.remoteFtpConfigXmlFile)
+
+        #Enable or disable "Update Local Device" button
+        if self.configFtpRemoteFileBrowse.text() != "":
+            self.updateRemoteFtpButton.setEnabled(True)
+        else:
+            self.updateRemoteFtpButton.setEnabled(False)
+            
+            
     def updateDiscoveredDeviceList(self, listView):
         """
         Add discovered devices to Discovered Devices window
@@ -158,7 +195,7 @@ class Ui_MainWindow(object):
         
         if "DEV" in selected[0]:           
             results = self.ntd.do_print(unicode(selected[0]))
-            print results
+            #print results
             window.setText(results)
         else:
             window.clear()
@@ -169,7 +206,7 @@ class Ui_MainWindow(object):
         Refresh details in local "Device Interface Details" window
         """
         if "DEV" in self.selectedLocalDevice[0]:
-            self.ntd.do_lcfg(unicode(self.selectedLocalDevice[0]),str(self.localConfigFile))
+            self.ntd.do_lcfg(unicode(self.selectedLocalDevice[0]),str(self.localConfigXmlFile))
             self.printInfo(self.discoveredLocalDev.currentItem(), self.detailsLocalDev)
     
     def updateRemoteDevice(self):
@@ -178,7 +215,7 @@ class Ui_MainWindow(object):
         Refresh details in remote "Device Interface Details" window
         """            
         if "DEV" in self.selectedRemoteDevice[0]:
-            self.ntd.do_rcfg(unicode(self.selectedRemoteDevice[0]), unicode(self.selectedRemoteDevice[1]), str(self.remoteConfigFile))
+            self.ntd.do_rcfg(unicode(self.selectedRemoteDevice[0]), unicode(self.selectedRemoteDevice[1]), str(self.remoteConfigXmlFile))
             self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev)
             
     @waiting_effects
@@ -267,22 +304,22 @@ class Ui_MainWindow(object):
         self.discoveredLocalDev.setSpacing(2)
         self.discoveredLocalDev.itemClicked.connect(lambda: self.printInfo(self.discoveredLocalDev.currentItem(), self.detailsLocalDev))
 
-        self.browseButton = QtGui.QPushButton(self.tab)
-        self.browseButton.setGeometry(QtCore.QRect(354, 385, 85, 28))
-        self.browseButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
-        self.browseButton.setObjectName(_fromUtf8("browseButton"))
-        self.browseButton.clicked.connect(self.browseLocalFolder)
+        self.browseLocalXmlButton = QtGui.QPushButton(self.tab)
+        self.browseLocalXmlButton.setGeometry(QtCore.QRect(354, 385, 35, 28))
+        self.browseLocalXmlButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.browseLocalXmlButton.setObjectName(_fromUtf8("browseLocalXmlButton"))
+        self.browseLocalXmlButton.clicked.connect(self.browseLocalXmlFolder)
 
-        self.updateLocalButton = QtGui.QPushButton(self.tab)
-        self.updateLocalButton.setGeometry(QtCore.QRect(115, 435, 325, 28))
-        self.updateLocalButton.setEnabled(False)
-        self.updateLocalButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
-        self.updateLocalButton.setObjectName(_fromUtf8("updateLocalButton"))
-        self.updateLocalButton.clicked.connect(self.updateLocalDevice)
+        self.updateLocalXmlButton = QtGui.QPushButton(self.tab)
+        self.updateLocalXmlButton.setGeometry(QtCore.QRect(400, 385, 65, 28))
+        self.updateLocalXmlButton.setEnabled(False)
+        self.updateLocalXmlButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.updateLocalXmlButton.setObjectName(_fromUtf8("updateLocalXmlButton"))
+        self.updateLocalXmlButton.clicked.connect(self.updateLocalDevice)
 
-        self.configFileLabel = QtGui.QLabel(self.tab)
-        self.configFileLabel.setGeometry(QtCore.QRect(32, 390, 77, 16))
-        self.configFileLabel.setObjectName(_fromUtf8("configFileLabel"))
+        self.localConfigXmlFileLabel = QtGui.QLabel(self.tab)
+        self.localConfigXmlFileLabel.setGeometry(QtCore.QRect(32, 390, 85, 16))
+        self.localConfigXmlFileLabel.setObjectName(_fromUtf8("localConfigXmlFileLabel"))
 
         self.detailsLocalDevLabel = QtGui.QLabel(self.tab)
         self.detailsLocalDevLabel.setGeometry(QtCore.QRect(32, 175, 411, 20))
@@ -311,11 +348,11 @@ class Ui_MainWindow(object):
         self.scanButton.setObjectName(_fromUtf8("scanButton"))
         self.scanButton.clicked.connect(self.scanLocal)
 
-        self.configFileBrowse = QtGui.QLineEdit(self.tab)
-        self.configFileBrowse.setGeometry(QtCore.QRect(115, 385, 231, 28))
-        self.configFileBrowse.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.configFileBrowse.setReadOnly(True)
-        self.configFileBrowse.setObjectName(_fromUtf8("configFileBrowse"))
+        self.localConfigXmlFileBrowse = QtGui.QLineEdit(self.tab)
+        self.localConfigXmlFileBrowse.setGeometry(QtCore.QRect(120, 385, 231, 28))
+        self.localConfigXmlFileBrowse.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.localConfigXmlFileBrowse.setReadOnly(True)
+        self.localConfigXmlFileBrowse.setObjectName(_fromUtf8("localConfigXmlFileBrowse"))
 
         self.detailsLocalDev = QtGui.QLabel(self.tab)
         self.detailsLocalDev.setGeometry(QtCore.QRect(30, 195, 410, 170))
@@ -335,13 +372,13 @@ class Ui_MainWindow(object):
 
         self.detailsLocalDevLabel.raise_()
         self.discoveredDevicesLable.raise_()
-        self.browseButton.raise_()
-        self.updateLocalButton.raise_()
-        self.configFileLabel.raise_()
+        self.browseLocalXmlButton.raise_()
+        self.updateLocalXmlButton.raise_()
+        self.localConfigXmlFileLabel.raise_()
         self.scanButton.raise_()
         self.discoveredLocalDev.raise_()
-        self.configFileBrowse.raise_()
-        #self.updateRemoteButton.raise_()
+        self.localConfigXmlFileBrowse.raise_()
+        #self.updateRemoteXmlButton.raise_()
         self.detailsLocalDev.raise_()
         self.tabWidget.addTab(self.tab, _fromUtf8(""))
         self.tab_2 = QtGui.QWidget()
@@ -355,22 +392,22 @@ class Ui_MainWindow(object):
         self.discoveredRemoteDev.setObjectName(_fromUtf8("discoveredRemoteDev"))
         self.discoveredRemoteDev.itemClicked.connect(lambda: self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev))
 
-        self.browseButtonRemote = QtGui.QPushButton(self.tab_2)
-        self.browseButtonRemote.setGeometry(QtCore.QRect(353, 385, 85, 28))
-        self.browseButtonRemote.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
-        self.browseButtonRemote.setObjectName(_fromUtf8("browseButtonRemote"))
-        self.browseButtonRemote.clicked.connect(self.browseRemoteFolder)
+        self.browseRemoteXmlButton = QtGui.QPushButton(self.tab_2)
+        self.browseRemoteXmlButton.setGeometry(QtCore.QRect(354, 385, 35, 28))
+        self.browseRemoteXmlButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.browseRemoteXmlButton.setObjectName(_fromUtf8("browseRemoteXmlButton"))
+        self.browseRemoteXmlButton.clicked.connect(self.browseRemoteXmlFolder)
         
-        self.updateRemoteButton = QtGui.QPushButton(self.tab_2)
-        self.updateRemoteButton.setGeometry(QtCore.QRect(115, 435, 325, 28))
-        self.updateRemoteButton.setEnabled(False)
-        self.updateRemoteButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
-        self.updateRemoteButton.setObjectName(_fromUtf8("updateRemoteButton"))
-        self.updateRemoteButton.clicked.connect(self.updateRemoteDevice)
+        self.updateRemoteXmlButton = QtGui.QPushButton(self.tab_2)
+        self.updateRemoteXmlButton.setGeometry(QtCore.QRect(400, 385, 65, 28))
+        self.updateRemoteXmlButton.setEnabled(False)
+        self.updateRemoteXmlButton.setStyleSheet(_fromUtf8("background-color: rgba(224, 231, 245, 255);"))
+        self.updateRemoteXmlButton.setObjectName(_fromUtf8("updateRemoteXmlButton"))
+        self.updateRemoteXmlButton.clicked.connect(self.updateRemoteDevice)
 
-        self.configFileLabelRemote = QtGui.QLabel(self.tab_2)
-        self.configFileLabelRemote.setGeometry(QtCore.QRect(32, 390, 77, 16))
-        self.configFileLabelRemote.setObjectName(_fromUtf8("configFileLabelRemote"))
+        self.remoteConfigXmlFileLabel = QtGui.QLabel(self.tab_2)
+        self.remoteConfigXmlFileLabel.setGeometry(QtCore.QRect(32, 390, 85, 16))
+        self.remoteConfigXmlFileLabel.setObjectName(_fromUtf8("remoteConfigXmlFileLabel"))
 
         self.detailsRemoteDevLabel = QtGui.QLabel(self.tab_2)
         self.detailsRemoteDevLabel.setGeometry(QtCore.QRect(32, 175, 411, 20))
@@ -407,12 +444,12 @@ class Ui_MainWindow(object):
         self.label.setGeometry(QtCore.QRect(32, 14, 131, 21))
         self.label.setObjectName(_fromUtf8("label"))
 
-        self.configRemoteFileBrowse = QtGui.QLineEdit(self.tab_2)
-        self.configRemoteFileBrowse.setGeometry(QtCore.QRect(115, 385, 231, 28))
-        self.configRemoteFileBrowse.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
-        self.configRemoteFileBrowse.setText(_fromUtf8(""))
-        self.configRemoteFileBrowse.setReadOnly(True)
-        self.configRemoteFileBrowse.setObjectName(_fromUtf8("configRemoteFileBrowse"))
+        self.remoteConfigXmlFileBrowse = QtGui.QLineEdit(self.tab_2)
+        self.remoteConfigXmlFileBrowse.setGeometry(QtCore.QRect(120, 385, 231, 28))
+        self.remoteConfigXmlFileBrowse.setStyleSheet(_fromUtf8("background-color: rgb(255, 255, 255);"))
+        self.remoteConfigXmlFileBrowse.setText(_fromUtf8(""))
+        self.remoteConfigXmlFileBrowse.setReadOnly(True)
+        self.remoteConfigXmlFileBrowse.setObjectName(_fromUtf8("remoteConfigXmlFileBrowse"))
         
         # self.lineEdit_3 = QtGui.QLineEdit(self.tab_2)
         # self.lineEdit_3.setGeometry(QtCore.QRect(30, 195, 410, 170))
@@ -444,16 +481,16 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "GraphNetdisc", None))
-        self.browseButton.setText(_translate("MainWindow", "Browse", None))
-        self.updateLocalButton.setText(_translate("MainWindow", "Update Local Device", None))
-        self.configFileLabel.setText(_translate("MainWindow", "Confige File", None))
+        self.browseLocalXmlButton.setText(_translate("MainWindow", "...", None))
+        self.updateLocalXmlButton.setText(_translate("MainWindow", "Apply", None))
+        self.localConfigXmlFileLabel.setText(_translate("MainWindow", "Confige .xml File", None))
         self.detailsLocalDevLabel.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable.setText(_translate("MainWindow", "Discovered Local Devices", None))
         self.scanButton.setText(_translate("MainWindow", "Scan Network", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "   Local Devices", None))
-        self.browseButtonRemote.setText(_translate("MainWindow", "Browse", None))
-        self.updateRemoteButton.setText(_translate("MainWindow", "Update Remote Device", None))
-        self.configFileLabelRemote.setText(_translate("MainWindow", "Confige File", None))
+        self.browseRemoteXmlButton.setText(_translate("MainWindow", "...", None))
+        self.updateRemoteXmlButton.setText(_translate("MainWindow", "Apply", None))
+        self.remoteConfigXmlFileLabel.setText(_translate("MainWindow", "Confige .xml File", None))
         self.detailsRemoteDevLabel.setText(_translate("MainWindow", "Device Interface Details", None))
         self.discoveredDevicesLable_2.setText(_translate("MainWindow", "Discovered Remote Devices", None))
         self.scanButtonRemote.setText(_translate("MainWindow", "Scan Network", None))
