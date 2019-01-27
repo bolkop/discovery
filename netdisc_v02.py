@@ -126,7 +126,7 @@ class netdisc:
             raise ValueError("Cannot open the config file")
 
         # Response from netdisc
-        readback = self.__do_action("lcfg", device, configFile)
+        readback = self.__do_action("lcfg", device, "'"+configFile+"'")
 
         if "Sent LOCAL-CONFIG" in readback:
             # if "Received CONFIG-ACK" in readback:
@@ -149,7 +149,7 @@ class netdisc:
         except:
             raise ValueError("Cannot open the config file")
         # Response from netdisc
-        readback = self.__do_action("rcfg", device.upper(), macAddress, configFile)
+        readback = self.__do_action("rcfg", device.upper(), macAddress, "'"+configFile+"'")
         if "sent REMOTE-CONFIG" in readback:
             if "Received CONFIG-ACK" in readback:
                 return True
@@ -179,8 +179,8 @@ class netdisc:
         """
 
         #This is only for testing
-        tmpDev = "DEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
-                 "DEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
+        tmpDev = "TestDEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
+                 "TestDEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
         
         tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
                      "Interfaces: Name IP Address MAC Address \n" \
@@ -232,7 +232,7 @@ class netdisc:
                 devicesList = textwrap.dedent(devicesList)
                 return devicesList
             else:
-                return tmpDev #False
+                return False #tmpDev #False
 
         else:
             readback = self.__do_action("print", dev)
@@ -240,7 +240,7 @@ class netdisc:
             if "eth" in readback:
                 return readback
             else:
-                return tmpSummary #False
+                return False #tmpSummary #False
 
     def get_MAC(self):
         """
@@ -248,23 +248,20 @@ class netdisc:
         OUT: MAC address of active NIC
         Raise exception if not able to execute command
         """
-        try:
-            # Collect MAC addreses from all active NIC
-            macList = self.__pcControl.get_MAC()
-            #print (macList)
-            macCount = len(macList)
-            #print(macCount)
-            
-            # Check how many is active
-            if macCount >1:
-                raise ValueError("More than one NIC is active")
-            elif macCount == 0:
-                raise ValueError("There is no active NIC")
-            else:
-                return macList[0]
-
-        except Exception as e:
-            return e
+        
+        # Collect MAC addreses from all active NIC
+        macList = self.__pcControl.get_MAC()
+        #print (macList)
+        macCount = len(macList)
+        #print(macCount)
+        
+        # Check how many is active
+        if macCount >1:
+            raise ValueError("More than one NIC is active")
+        elif macCount == 0:
+            raise ValueError("There is no active NIC")
+        else:
+            return macList[0]       
 
     def get_IP(self):
         """
@@ -273,25 +270,20 @@ class netdisc:
         OUT: IP address
         Raise exception if not able to execute command
         """
-        try:
-            # Obtain IP addresses from active MAC address
-            IpList = self.__pcControl.get_IP(self.MacAddress)
-            IpListCount = len(IpList)
-            
-            # Check how many IP addresses is set
-            if IpListCount >1:
-                raise ValueError("More than one IP is set")
-            elif IpList == 0:
-                raise ValueError("There is no IP address")
-            else:
-                return IpList[0]
-
-        except Exception as e:
-            print("problem with IP")
-            return e  
-        
    
-    
+        # Obtain IP addresses from active MAC address
+        IpList = self.__pcControl.get_IP(self.MacAddress)
+        IpListCount = len(IpList)
+  
+        
+        #if IpListCount >1:
+            # raise ValueError("More than one IP is set")
+            
+        # Check is there at least one IP address   
+        if IpList > 0:
+            return IpList[0]
+        else:
+            raise ValueError("There is no IP address")
 
     def set_pcXML(self, mac, ip=None, mask=None):
         """
