@@ -55,7 +55,7 @@ class Ui_MainWindow(object):
         # Set file filter
         filter = "xml(*.xml)"
         self.localConfigXmlFile = QtGui.QFileDialog.getOpenFileName(None, "", "", filter)
-        # print(selectedFile)
+        #print("'" + self.localConfigXmlFile +"'")
         self.localConfigXmlFileBrowse.setText(self.localConfigXmlFile)
 
         #Enable or disable "Update Local Device" button
@@ -180,14 +180,15 @@ class Ui_MainWindow(object):
         
         # Check in which window (local or remote) device is selected 
         windowName =  window.objectName()
-        
-        if windowName is self.detailsLocalDev.objectName():
+               
+        if windowName == self.detailsLocalDev.objectName():
             # Obtain local device name "DEV-?"
             self.selectedLocalDevice = dev.split(' ', 1)
             selected = self.selectedLocalDevice
        
         else:
             # Obtain remote device name "DEV-?"
+            print "remote device info"
             self.selectedRemoteDevice = dev.split(' ', 1)
             selected = self.selectedRemoteDevice
             
@@ -205,9 +206,11 @@ class Ui_MainWindow(object):
         Send selected configure .xml file to local device
         Refresh details in local "Device Interface Details" window
         """
+        #print self.selectedLocalDevice[0]
         if "DEV" in self.selectedLocalDevice[0]:
             self.ntd.do_lcfg(unicode(self.selectedLocalDevice[0]),str(self.localConfigXmlFile))
-            self.printInfo(self.discoveredLocalDev.currentItem(), self.detailsLocalDev)
+            self.scanLocal()
+           # self.printInfo(self.discoveredLocalDev.currentItem(), self.detailsLocalDev)
     
     def updateRemoteDevice(self):
         """
@@ -216,7 +219,8 @@ class Ui_MainWindow(object):
         """            
         if "DEV" in self.selectedRemoteDevice[0]:
             self.ntd.do_rcfg(unicode(self.selectedRemoteDevice[0]), unicode(self.selectedRemoteDevice[1]), str(self.remoteConfigXmlFile))
-            self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev)
+            self.scanRemote()
+            #self.printInfo(self.discoveredRemoteDev.currentItem(), self.detailsRemoteDev)
             
     @waiting_effects
     def scanRemote(self):
@@ -252,7 +256,7 @@ class Ui_MainWindow(object):
                 allDevices = devices.splitlines()
                 
                 # For testing only, remove when using real modems
-                allDevices.append("DEV-99 00:04:00:00:00:00 140.110.1.28 ELEC MODEM") 
+                #allDevices.append("DEV-99 00:04:00:00:00:00 140.110.1.28 ELEC MODEM") 
                 
                 # Remove local devices from list and copy remote devices to remoteDevicesList
                 self.remoteDevicesList = list((set(allDevices) - set(self.localDevicesList)))
