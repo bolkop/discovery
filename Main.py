@@ -9,7 +9,8 @@ import ModSetupWithTree as ms
 class MyQtApp(ms.Ui_MainWindow, QtGui.QMainWindow):
     __ntd = netdisc() # object class netdisc
     
-    __localDevicesList = []   # Global list to hold all discovered local devices
+    __localPc = None
+    __localDevicesList = ["Dev10 24323, fdsfs, fsdfs, fssdf", "Dev1 54881 dsfdf gsdjkls ds;djfk sdlkf;"]   # Global list to hold all discovered local devices
     __remoteDevicesList = []   # Global list to hold all discovered remote devices
     __selectedLocalDevice = None  # Global variable for selected local device 
     __selectedRemoteDevice = None  # Global variable for selected global device 
@@ -34,8 +35,10 @@ class MyQtApp(ms.Ui_MainWindow, QtGui.QMainWindow):
             try:
                 function(self)
             except Exception as e:
-                raise e
-                print("Error {}".format(e.args[0]))
+                QApplication.restoreOverrideCursor()
+                self.showdialog(e.args[0])
+               # self.clearDevicesFromTree()
+                raise e                         
             finally:
                 QApplication.restoreOverrideCursor()
         return new_function
@@ -55,14 +58,14 @@ class MyQtApp(ms.Ui_MainWindow, QtGui.QMainWindow):
         self.treeWidget.clear()
         self.treeWidget.setHeaderLabels(["Network Devices"])
         pcIpAddress = self.__ntd.get_IP()
-        localPc = QtGui.QTreeWidgetItem(['Local PC\t' + pcIpAddress])
-        self.treeWidget.addTopLevelItem(localPc)
+        self.__localPc = QtGui.QTreeWidgetItem(['Local PC ' + pcIpAddress])
+        self.treeWidget.addTopLevelItem(self.__localPc)
         self.lineEditPcPhysicalAddress.clear()
         self.lineEditPcPhysicalAddress.setText((unicode(self.__ntd.get_MAC())))
         self.lineEditPcIpAddress.setText(unicode(pcIpAddress))
         self.lineEditPcSubnetMask.setText(unicode(self.__ntd.get_SubnetMask()))
         self.lineEditPcDefaultGateway.setText(unicode(self.__ntd.get_DefaultGateway()))
-        self.showdialog()
+        self.stackedWidget.setCurrentIndex(0)
     
     def pcDetals(self):
         print "pc details"
@@ -85,53 +88,98 @@ class MyQtApp(ms.Ui_MainWindow, QtGui.QMainWindow):
                
         if devices is False:
             # Clear list of local devices if not found any device
-            self.__localDevicesList = []
-            self.__localDevicesList.insert(0, "None")
-
+            # self.__localDevicesList = []
+            # self.__localDevicesList.insert(0, "None")
+            raise ValueError("Unable to find local devices")
         else:
             # Update list of local devices
-            self.__localDevicesList = devices.splitlines()
+            #self.__localDevicesList = []
+            lineSplited = devices.splitlines()
+            
+            for dev in lineSplited:
+                devSplited = dev.split()
+                tmpList = " ".join([devSplited[index] for index in [0,2,3,4]])
+                self.__localDevicesList.append(tmpList)
+            
+            print (self.__localDevicesList)
+            self.addLocalDevicesToTree(self.__localDevicesList)
 
         # Print list of discovered devices in Tree window
-        self.updateDiscoveredDeviceList()
+        #self.updateDiscoveredDeviceList()
         
-    def updateDiscoveredDeviceList(self):
-        """
-        Add discovered devices to Tree window from global __localDevicesList.
-        """
-        print (self.__localDevicesList[0])
-        if self.__localDevicesList[0] == "None":
-            None
-            
-    def showdialog(self):
-        msg = QtGui.QMessageBox()
-        #msg.setIcon(QtGui.QMessageBox.Information)
-
-        msg.setText("This is a message box")
-        msg.exec_()
-
-        # if ret == QtGui.QMessageBox.Yes:
-            # print( "Yes" )
-            # return
+    # def updateDiscoveredDeviceList(self):
+        # """
+        # Add discovered devices to Tree window from global __localDevicesList.
+        # """
+        # print (self.__localDevicesList[0])
+        # if self.__localDevicesList[0] == "None":
+            # self.clearDevicesFromTree()
         # else:
-            # print( "No" )
-            # return
-        # msg.setInformativeText("This is additional information")
-        # msg.setWindowTitle("MessageBox demo")
-        # msg.setDetailedText("The details are as follows:")
-        # msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)     
+            # self.addLocalDevicesToTree(self._localDevicesList)
+            
+
+    def addLocalDevicesToTree(self, devicesList):
+      #  allDevices = devicesList.splitlines()
         
-        # listView.clear()
-        # listView.addItems(self.localDevicesList)
-        # self.updateComboBox()
- 
- # for parent in plist:
- # pitems=QTreeWidgetItem(treeWidget)
- # pitems.setText(0,parent)
- # for child in clist:
- # citems=QTreeWidgetItem(pitems)
- # citems.setText(0,child)
-    
+        #add all dev from list before updates
+        for dev in self.__localDevicesList:
+           # devSplited = dev.split()
+            #tmpList = " ".join([devSplited[index] for index in [0,2,3,4]])
+            localDev = QtGui.QTreeWidgetItem(self.__localPc)
+            localDev.setText(0, dev)
+            
+        # update __localDevicesList list and remove not existing devices
+      #  self.__localDevicesList = list((set(allDevices) - set(self.__localDevicesList)))   
+        
+        # add updated list to tree
+    #    for dev in self.__localDevicesList:
+           # devSplited = dev.split()
+           # tmpList = " ".join([devSplited[index] for index in [0,2,3,4]])
+     #       localDev = QtGui.QTreeWidgetItem(self.__localPc)
+     #       localDev.setText(0, dev)
+        
+      #  print(dev)
+        
+        # findQWidget = QtGui.QTreeWidgetItem(self.__localPc)    
+        # findQWidget.setText(0, dev) 
+        # print(findQWidget.text(0))
+        
+        #for index in range(self.treeWidget.topLevelItemCount()):
+        for index in range(self.__localPc.childCount()):
+            print ("from tree", self.__localPc.child(index).text(0))
+           # print("first item in list ",  tmpList[0])
+            print("from list", self.__localDevicesList[0])
+          #  if self.__localDevicesList[0] != self.__localPc.child(index).text(0):
+          #      self.__localPc.takeChild(index)
+            
+       
+       # for ch in treeChild:
+        #    print (ch.text(0))
+            
+            
+            # if findQWidget is self.treeWidget.itemWidget(self.__localPc, index):
+                # print (findQWidget)
+                
+                
+        self.treeWidget.expandToDepth(0)  
+       # for dev in self.treeWidget.
+        
+    def clearDevicesFromTree(self):
+        print ("All deviced removed from tree")
+        None
+            
+    def showdialog(self, text):
+        """
+        Display window message type info.
+        Text parameter as string is displayed
+        Message window includes OK button
+        """
+        msg = QtGui.QMessageBox()
+        msg.setWindowTitle("Info")
+        msg.setIcon(QtGui.QMessageBox.Information)
+        msg.setText(text+"\t\n\n")
+        msg.setStandardButtons(QtGui.QMessageBox.Ok)   
+        msg.exec_()
     
 
 def mainFunc():
