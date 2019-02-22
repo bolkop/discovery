@@ -23,6 +23,7 @@ class MyQtApp(gui.Ui_MainWindow, QtGui.QMainWindow):
     __remoteConfigXmlFile = None   # Configuration .xml File for remote device
     __localConfigFtpFile = None   # Configuration .ftp File for local device
     __remoteConfigFtpFile = None   # Configuration .ftp File for remote device
+    __ipPcDetails = {"mac": "0", "ip": "0", "mask": "0", "gateway": "0"}
   
     __testList = ["Dev10 24323, fdsfs, fsdfs, fssdf"\
                             , "Dev1 54881 dsfdf gsdjkls ds;djfk sdlkf;"\
@@ -43,13 +44,20 @@ class MyQtApp(gui.Ui_MainWindow, QtGui.QMainWindow):
         self.pushButtonLocalXmlApply.clicked.connect(lambda: self.xmlConfigDl(self.__selectedLocalDevice, self.__localConfigXmlFile))
         self.pushButtonLocalFtpApply.clicked.connect(lambda: self.ftpConfigDl(self.__selectedLocalDevice, self.__localConfigFtpFile))
         self.pushButtonRefreshPcIp.clicked.connect(self.refreshPcIpDetails)
-        self.pushButtonEditIp.clicked.connect(self.editPcIpDetails)
+        self.pushButtonApplyPcIp.clicked.connect(self.applyPcIp)
+        self.pushButtonCancelPcIp.clicked.connect(self.cancelIpChanges)
+        self.lineEditPcIpAddress.textEdited.connect(self.editPcIpDetails)
+        self.lineEditPcDefaultGateway.textEdited.connect(self.editPcIpDetails)
+        self.lineEditPcSubnetMask.textEdited.connect(self.editPcIpDetails)
+        self.lineEditPcIpAddress.returnPressed.connect(self.pushButtonApplyPcIp.click)
+        self.lineEditPcSubnetMask.returnPressed.connect(self.pushButtonApplyPcIp.click)
+        self.lineEditPcDefaultGateway.returnPressed.connect(self.pushButtonApplyPcIp.click)
     
     def waiting_effects(function):
-        def new_function(self):
+        def new_function(*args, **kwargs):
             QApplication.setOverrideCursor(QCursor(QtCore.Qt.WaitCursor))
             try:
-                function(self)
+                function(*args, **kwargs)
             except ValueError as e:
                 QApplication.restoreOverrideCursor()
                 self.showdialog(e.args[0])
@@ -73,14 +81,15 @@ class MyQtApp(gui.Ui_MainWindow, QtGui.QMainWindow):
         """
         self.treeWidget.takeTopLevelItem(0)
         self.treeWidget.setHeaderLabels(["Network Devices"])
-        pcIpAddress = self.__ntd.get_IP()
-        self.__localPc = QtGui.QTreeWidgetItem(['Local PC ' + pcIpAddress])
+     #   pcIpAddress = self.__ntd.get_IP()
+        self.__localPc = QtGui.QTreeWidgetItem(['Local PC '])
         self.treeWidget.addTopLevelItem(self.__localPc)
-        self.lineEditPcPhysicalAddress.clear()
-        self.lineEditPcPhysicalAddress.setText((unicode(self.__ntd.get_MAC())))
-        self.lineEditPcIpAddress.setText(unicode(pcIpAddress))
-        self.lineEditPcSubnetMask.setText(unicode(self.__ntd.get_SubnetMask()))
-        self.lineEditPcDefaultGateway.setText(unicode(self.__ntd.get_DefaultGateway()))
+      #  self.lineEditPcPhysicalAddress.clear()
+      #  self.lineEditPcPhysicalAddress.setText((unicode(self.__ntd.get_MAC())))
+      #  self.lineEditPcIpAddress.setText(unicode(pcIpAddress))
+      #  self.lineEditPcSubnetMask.setText(unicode(self.__ntd.get_SubnetMask()))
+      #  self.lineEditPcDefaultGateway.setText(unicode(self.__ntd.get_DefaultGateway()))
+        self.refreshPcIpDetails()
         self.stackedWidget.setCurrentIndex(0)
         self.treeWidget.itemClicked.connect(lambda: self.printInfo(self.treeWidget.currentItem()))
       
@@ -176,32 +185,104 @@ class MyQtApp(gui.Ui_MainWindow, QtGui.QMainWindow):
         # """
        
         # Get the current IP settings for an active NIC
-        self.__ntd.refreshNicDetails()
+        nic = self.__ntd.refreshNicDetails()
         
-        # Get MAC, IP, Mask and default gateway details
-        mac = self.__ntd.get_MAC()
-        ip = self.__ntd.get_IP()
-        mask = self.__ntd.get_SubnetMask()
-        gateway = self.__ntd.get_DefaultGateway()
+        self.__ipPcDetails["mac"] = self.__ntd.get_MAC()
+        self.__ipPcDetails["ip"] = self.__ntd.get_IP()
+        self.__ipPcDetails["mask"] = self.__ntd.get_SubnetMask()
+        self.__ipPcDetails["gateway"] = self.__ntd.get_DefaultGateway()
       
         # Update info in Tree Window
-        self.__localPc.setText(0,  'Local PC ' + ip)
+        self.__localPc.setText(0,  'Local PC ' + self.__ipPcDetails["ip"])
         
         # Update info in TCP/IP Window
-        self.lineEditPcPhysicalAddress.setText(mac)
-        self.lineEditPcIpAddress.setText(ip)
-        self.lineEditPcSubnetMask.setText(mask)
-        self.lineEditPcDefaultGateway.setText(gateway)
+        self.lineEditPcPhysicalAddress.setText(self.__ipPcDetails["mac"])
+        self.lineEditPcIpAddress.setText(self.__ipPcDetails["ip"])
+        self.lineEditPcSubnetMask.setText(self.__ipPcDetails["mask"])
+        self.lineEditPcDefaultGateway.setText(self.__ipPcDetails["gateway"])
         
         # Update IP details in the 0000000000.XML file
-        self.__ntd.set_pcXML(mac, ip, mask)
+        self.__ntd.set_pcXML(self.__ipPcDetails["mac"], self.__ipPcDetails["ip"],\
+                            self.__ipPcDetails["mask"])
         
     def editPcIpDetails(self):
         print("edit pc ip")
-        self.lineEditPcIpAddress.setReadOnly(False)
-        self.lineEditPcIpAddress.setStyleSheet(("background-color: rgb(255, 255, 255);   color: rgb(255, 0, 0);"))
-        self.onlyInt = QtGui.QIntValidator()
-        self.lineEditPcIpAddress.setValidator(self.onlyInt)
+       
+        self.pushButtonApplyPcIp.setEnabled(True)
+      #  self.pushButtonApplyPcIp.setAutoDefault(True)
+        self.pushButtonApplyPcIp.setDefault(True)
+        
+        
+        regExp = QtCore.QRegExp('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+        validator = QtGui.QRegExpValidator(regExp)
+        self.lineEditPcIpAddress.setValidator(validator)
+        self.lineEditPcSubnetMask.setValidator(validator)
+        self.lineEditPcDefaultGateway.setValidator(validator)
+        #self.pushButtonApplyPcIp.setFocus()
+    
+    def applyPcIp(self):
+       
+        if not self.isIpCorrect(self.lineEditPcIpAddress):
+            self.showdialog("Incorrect IP Address %s" %self.lineEditPcIpAddress.text())
+        
+        elif not self.isIpCorrect(self.lineEditPcSubnetMask):
+            self.showdialog("Incorrect Subnet Mask %s" %self.lineEditPcSubnetMask.text())
+        
+        elif not self.isIpCorrect(self.lineEditPcDefaultGateway):
+            self.showdialog("Incorrect Gateway Address %s" %self.lineEditPcDefaultGateway.text())
+        
+        else:
+            print("set ip")
+            # Update info in Tree Window
+            self.__localPc.setText(0,  'Local PC ' + self.lineEditPcIpAddress.text())
+        
+            # Save new IP Details
+            self.__ipPcDetails["ip"] = unicode(self.lineEditPcIpAddress.text())
+            self.__ipPcDetails["mask"] = unicode(self.lineEditPcSubnetMask.text())
+            self.__ipPcDetails["gateway"] = unicode(self.lineEditPcDefaultGateway.text())
+            self.__ntd.setIp(self.__ipPcDetails["mac"], self.__ipPcDetails["ip"],\
+                           self.__ipPcDetails["mask"], self.__ipPcDetails["gateway"])
+          
+            self.framePcAddressDetails.focusWidget().clearFocus()
+            self.pushButtonApplyPcIp.setEnabled(False)
+        
+    
+    def cancelIpChanges(self):
+        print("cancel pc ip changes")
+       # self.refreshPcIpDetails()
+          # Update info in TCP/IP Window
+        self.lineEditPcPhysicalAddress.setText(self.__ipPcDetails["mac"])
+        self.lineEditPcIpAddress.setText(self.__ipPcDetails["ip"])
+        self.lineEditPcSubnetMask.setText(self.__ipPcDetails["mask"])
+        self.lineEditPcDefaultGateway.setText(self.__ipPcDetails["gateway"])
+        self.pushButtonApplyPcIp.setEnabled(False)
+        
+        
+        
+        
+    
+    def isIpCorrect(self, qline):
+    
+        pieces = unicode(qline.text()).split('.')
+            
+        try:
+            if len(pieces) != 4: 
+                #self.showdialog("Incorrect IP Address %s" %ustr)
+                qline.selectAll()
+                qline.setFocus()
+                return False
+            for item in pieces:
+                if not 0 <= int(item) <= 255:
+                   # self.showdialog("Incorrect IP Address %s" %ustr)
+                    qline.selectAll()
+                    qline.setFocus()
+                    return False
+        except ValueError:
+            qline.selectAll()
+            qline.setFocus()
+            return False
+        
+        return True 
         
     @waiting_effects
     def scanLocal(self):
@@ -377,8 +458,8 @@ class MyQtApp(gui.Ui_MainWindow, QtGui.QMainWindow):
             except ValueError as e:
                 self.showdialog(e.args[0])
             self.printInfo(self.treeWidget.currentItem())  
-        #raise ValueError("Unable to find local devices %s" %(device[0]))
-    
+                
+    @waiting_effects
     def ftpConfigDl(self, device, fileName):
         """
         Download configure .ftp file to selected device
