@@ -17,6 +17,7 @@ class netdisc:
     __pcControl = pccontrol()
 
     def __init__(self):
+        self.refreshNicDetails()
         # Check PC MAC and IP address. 
         self.MacAddress = self.get_MAC()
         print(self.MacAddress)
@@ -25,7 +26,7 @@ class netdisc:
         self.subnetMask = self.get_SubnetMask()
         print (self.subnetMask)
         self.defaultGateway = self.get_DefaultGateway()
-        
+        print(self.defaultGateway)
         # Update 00000000000.xml file with PC MAC and IP address       
         self.set_pcXML(self.MacAddress, self.IpAddress, self.subnetMask)
 
@@ -138,7 +139,7 @@ class netdisc:
             #     raise Exception("No response from local device")
             return True
         else:
-            raise ValueError("Config file not sent", readback)
+            raise ValueError("Config file not sent. %s" %(readback))
 
     def do_rcfg(self, device, macAddress, configFile):
         """
@@ -182,8 +183,8 @@ class netdisc:
         """
 
         #This is only for testing
-        tmpDev = "TestDEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150 \n" \
-                 "TestDEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
+        tmpDev = ["TestDEV-8: 00:04:00:00:00:00 140.10.10.2 ELEC MODEM 247 00:02:00:00:00:00 192.168.0.150"]# \
+                # "TestDEV-7: 00:aa:de:00:00:52 192.168.0.150 ELEC MODEM 246 ff:ff:ff:ff:ff:ff 255.255.255.255"
         
         tmpSummary = "Device Summary - DEV-7 192.168.0.150 00:aa:de:00:00:52 \n" \
                      "Interfaces: Name IP Address MAC Address \n" \
@@ -206,36 +207,25 @@ class netdisc:
                 c += 1
                       
         if dev is None:
-
-            # #Get info about discovered devices
-            # readback = self.__do_action("print")
-            
-            # #Wait for readback for less than 2s
-            # t1 = datetime.now()
-            # while len(readback)== 0:
-                # if (datetime.now() - t1).seconds > 1:
-                    # break
-            # #    time.sleep(0.8)
-                # readback = self.__do_action("print")
-            
-            # Send command netdisc print
-           
-           # time.sleep(2)
-          # print(os.path.getmtime("C:\\ModemConfig\\devlist.xml"))
             readback = self.__do_action("print")   
-            
-            
+             
             # Check if any devices was discovered
             if "DEV" in readback:
 
-                # Remove four first lines; only list of discovered devices will be shown
-                devicesList = '\n'.join(readback.split('\n')[4:])
+                # Remove four first lines; only list of discovered devices will be shown            
+                devicesSplited = readback.split('\n')[4:-1]
+                #print(devicesSplited)
+                devicesList = []
                 
+                # Remove extra white space between words
+                for dev in devicesSplited:
+                    devicesList.append(" ".join(dev.split()))                      
+               # print(devicesList)
                 # Remove indent from text
-                devicesList = textwrap.dedent(devicesList)
+               # devicesList = textwrap.dedent(devicesList)
                 return devicesList
             else:
-                return False #tmpDev #False
+                return tmpDev #False
 
         else:
             readback = self.__do_action("print", dev)
@@ -243,7 +233,7 @@ class netdisc:
             if "eth" in readback:
                 return readback
             else:
-                return False #tmpSummary #False
+                return tmpSummary #False
 
     def get_MAC(self):
         """
@@ -289,7 +279,17 @@ class netdisc:
     def get_DefaultGateway(self):
         ip = self.get_IP()
         return self.__pcControl.getDefaultGateway(ip)
-
+    
+    def refreshNicDetails(self):
+    
+        return self.__pcControl.getNicDetails()
+    
+    def setIp(self, mac, ip, mask, gateway):
+       # self.__pcControl.setIp(mac, ip, mask, gateway)
+        print("in netdisc gateway", gateway)
+        self.set_pcXML(mac, ip, mask)
+        
+    
     def set_pcXML(self, mac, ip=None, mask=None):
         """
         Set MAC and IP in the 000000000.xml file. If ip is None, the ip address is not changed
