@@ -225,7 +225,7 @@ class netdisc:
                # devicesList = textwrap.dedent(devicesList)
                 return devicesList
             else:
-                return tmpDev #False
+                return False #tmpDev #False
 
         else:
             readback = self.__do_action("print", dev)
@@ -233,7 +233,20 @@ class netdisc:
             if "eth" in readback:
                 return readback
             else:
-                return tmpSummary #False
+                return False #tmpSummary #False
+
+    def reset(self, dev):
+        """
+        Modem software reset
+        """
+        # Response from netdisc
+        readback = self.__do_action("reset", dev, "eth0")
+
+        if "DEVICE-RESET" in readback:
+            time.sleep(6)
+            return True
+        else:
+            return False
 
     def get_MAC(self):
         """
@@ -285,7 +298,7 @@ class netdisc:
         return self.__pcControl.getNicDetails()
     
     def setIp(self, mac, ip, mask, gateway):
-       # self.__pcControl.setIp(mac, ip, mask, gateway)
+        self.__pcControl.setIp(mac, ip, mask, gateway)
         print("in netdisc gateway", gateway)
         self.set_pcXML(mac, ip, mask)
         
@@ -416,6 +429,7 @@ if __name__ == "__main__":
     ##TEST##
     # try:
     netd = netdisc()
+    netd.reset("DEV-1")
    # print(netd.doLocalScan())
    # netd.do_stop()
    # netd.do_start()
@@ -431,8 +445,8 @@ if __name__ == "__main__":
   #  print(dev)
 
 
-    dev = netd.doLocalScan()
-    print(dev)
+ #   dev = netd.doLocalScan()
+ #   print(dev)
    
 # print(netd.do_stop())
 # print(netd.do_start())
