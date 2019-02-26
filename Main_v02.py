@@ -9,6 +9,8 @@ import socket
 import time
 import treegui_v02 as gui
 
+#temp text
+
 class MyQtApp(gui.Ui_MainWindow, QtGui.QMainWindow):
 
     __ntd = netdisc() # object class netdisc
