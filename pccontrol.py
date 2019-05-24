@@ -138,13 +138,21 @@ if __name__ == "__main__":
      
     hostPC = pccontrol()
     print (hostPC.getNicDetails()[0].ipAddress)
-    print (hostPC.getMacAddresses()[0])
     mac = hostPC.getMacAddresses()[0]
-    hostIp = hostPC.getIp(mac)
-    print(hostIp)
-    print (hostPC.getDefaultGateway(hostIp))
+    print("mac address", mac)
+    
+    # Set to Default ip address and print 
+    hostPC.setIp(mac)  
+    actualPcIpAddress = hostPC.getIp(mac)
+    print("host ip address", actualPcIpAddress)
+    
+    # Chane ip address and print
+  #  hostPC.setIp(mac, "192.168.1.1")
+  #  hostIp = hostPC.getIp(mac)
+  #  print("host ip address", actualPcIpAddress)
+   
 
-
+    
 
             
 
