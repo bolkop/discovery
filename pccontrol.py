@@ -7,7 +7,7 @@ class pccontrol:
       
     def __init__(self):
         self.localInterfaces = []
-        #self.getNicDetails()
+       
     
     
     def getNicDetails(self):
